@@ -36,7 +36,7 @@ namespace graphics::camera::view
 		glm::vec3 center;
 		glm::vec3 up;
 
-		glm::dmat4 matrix() noexcept override;
-		glm::vec3 eye_position() noexcept override;
+		glm::dmat4 matrix() const noexcept override;
+		glm::vec3 eye_position() const noexcept override;
 	};
 }

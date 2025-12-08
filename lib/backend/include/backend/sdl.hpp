@@ -22,6 +22,14 @@ namespace backend
 	///
 	std::expected<void, util::Error> initialize_sdl();
 
+	struct Vulkan_config
+	{
+		bool debug_enabled = false;
+		uint8_t vulkan_version_major = 1;
+		uint8_t vulkan_version_minor = 3;
+		uint8_t vulkan_version_patch = 0;
+	};
+
 	///
 	/// @brief SDL Context, holds SDL Window and GPU Device and provides helper functions
 	///
@@ -35,7 +43,7 @@ namespace backend
 			device(device)
 		{}
 
-		~SDL_context() noexcept = default;
+		~SDL_context() noexcept;
 
 		SDL_context(const SDL_context&) = delete;
 		SDL_context(SDL_context&&) = delete;
@@ -61,7 +69,7 @@ namespace backend
 			int height,
 			const std::string& title,
 			SDL_WindowFlags additional_flags = 0,
-			bool debug_enabled = false
+			const Vulkan_config& vk_config = {}
 		) noexcept;
 
 		///

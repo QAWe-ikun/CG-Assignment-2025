@@ -21,14 +21,16 @@ namespace graphics
 		std::expected<gpu::Texture, util::Error> create_texture_from_image_internal(
 			SDL_GPUDevice* device,
 			gpu::Texture::Format format,
-			Image_data image
+			Image_data image,
+			const std::string& name
 		) noexcept;
 
 		// Type-independent internal implementation of create_texture_from_mipmap
 		std::expected<gpu::Texture, util::Error> create_texture_from_mipmap_internal(
 			SDL_GPUDevice* device,
 			gpu::Texture::Format format,
-			std::span<const Image_data> mipmap_chain
+			std::span<const Image_data> mipmap_chain,
+			const std::string& name
 		) noexcept;
 	}
 
@@ -46,7 +48,8 @@ namespace graphics
 	std::expected<gpu::Buffer, util::Error> create_buffer_from_data(
 		SDL_GPUDevice* device,
 		gpu::Buffer::Usage usage,
-		std::span<const std::byte> data
+		std::span<const std::byte> data,
+		const std::string& name
 	) noexcept;
 
 	///
@@ -65,13 +68,15 @@ namespace graphics
 	std::expected<gpu::Texture, util::Error> create_texture_from_image(
 		SDL_GPUDevice* device,
 		gpu::Texture::Format format,
-		const image::Image_container<T>& image
+		const image::Image_container<T>& image,
+		const std::string& name
 	) noexcept
 	{
 		return detail::create_texture_from_image_internal(
 			device,
 			format,
-			{.size = image.size, .pixels = util::as_bytes(image.pixels)}
+			{.size = image.size, .pixels = util::as_bytes(image.pixels)},
+			name
 		);
 	}
 
@@ -91,7 +96,8 @@ namespace graphics
 	std::expected<gpu::Texture, util::Error> create_texture_from_mipmap(
 		SDL_GPUDevice* device,
 		gpu::Texture::Format format,
-		const std::vector<image::Image_container<T>>& mipmap_chain
+		const std::vector<image::Image_container<T>>& mipmap_chain,
+		const std::string& name
 	) noexcept
 	{
 		std::vector<detail::Image_data> chain_data;
@@ -101,6 +107,6 @@ namespace graphics
 				detail::Image_data{.size = level.size, .pixels = util::as_bytes(level.pixels)}
 			);
 
-		return detail::create_texture_from_mipmap_internal(device, format, chain_data);
+		return detail::create_texture_from_mipmap_internal(device, format, chain_data, name);
 	}
 }

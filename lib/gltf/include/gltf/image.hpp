@@ -43,7 +43,8 @@ namespace gltf
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image,
 		Color_compress_mode compress_mode,
-		bool srgb
+		bool srgb,
+		const std::string& name
 	) noexcept;
 
 	///
@@ -59,17 +60,20 @@ namespace gltf
 	std::expected<gpu::Texture, util::Error> create_normal_texture_from_image(
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image,
-		Normal_compress_mode compress_mode
+		Normal_compress_mode compress_mode,
+		const std::string& name
 	) noexcept;
 
 	///
 	/// @brief Create a placeholder image with a solid color, and dimension of 1x1
 	///
 	/// @param color Solid color, with range from 0~1
+	/// @param name Name for the created texture
 	/// @return Created GPU texture or error
 	///
 	std::expected<gpu::Texture, util::Error> create_placeholder_image(
 		SDL_GPUDevice* device,
-		glm::vec4 color
+		glm::vec4 color,
+		const std::string& name
 	) noexcept;
 }

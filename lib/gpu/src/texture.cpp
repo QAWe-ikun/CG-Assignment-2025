@@ -1,17 +1,22 @@
 #include "gpu/texture.hpp"
 #include "gpu/util.hpp"
+#include <SDL3/SDL_gpu.h>
 
 namespace gpu
 {
 	std::expected<Texture, util::Error> Texture::create(
 		SDL_GPUDevice* device,
-		const SDL_GPUTextureCreateInfo& create_info
+		const SDL_GPUTextureCreateInfo& create_info,
+		const std::string& name
 	) noexcept
 	{
 		assert(device != nullptr);
 
 		auto* const texture = SDL_CreateGPUTexture(device, &create_info);
 		if (texture == nullptr) RETURN_SDL_ERROR;
+
+		SDL_SetGPUTextureName(device, texture, name.c_str());
+
 		return Texture(device, texture);
 	}
 
@@ -48,11 +53,8 @@ namespace gpu
 		return SDL_GPUTextureSupportsFormat(device, format, type, usage);
 	}
 
-	void Texture::set_name(const char* name) const noexcept
+	SDL_GPUTextureSamplerBinding Texture::bind_with_sampler(SDL_GPUSampler* sampler) const noexcept
 	{
-		assert(resource != nullptr);
-		assert(device != nullptr);
-
-		SDL_SetGPUTextureName(device, resource, name);
+		return {.texture = *this, .sampler = sampler};
 	}
 }

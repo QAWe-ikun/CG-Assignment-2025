@@ -101,6 +101,17 @@ namespace gltf
 			static_cast<float>(material.emissiveFactor[2])
 		);
 
+		if (const auto found = material.extensions.find("KHR_materials_emissive_strength");
+			found != material.extensions.end())
+		{
+			const auto& ext = found->second;
+			if (ext.Has("emissiveStrength") && ext.Get("emissiveStrength").IsNumber())
+			{
+				mat.params.factor.emissive_mult *=
+					static_cast<float>(ext.Get("emissiveStrength").Get<double>());
+			}
+		}
+
 		/* Occlusion */
 
 		const auto& occlusion_texture = material.occlusionTexture;
@@ -168,20 +179,24 @@ namespace gltf
 
 	std::expected<void, util::Error> Material_list::create_default_textures(SDL_GPUDevice* device) noexcept
 	{
-		auto default_base_color_tex = gltf::create_placeholder_image(device, glm::vec4(1.0f));
+		auto default_base_color_tex =
+			gltf::create_placeholder_image(device, glm::vec4(1.0f), "GLTF Default Base Color");
 		if (!default_base_color_tex) return default_base_color_tex.error();
 
 		auto default_occlusion_metalness_roughness_tex = gltf::create_placeholder_image(
 			device,
-			glm::vec4(/*Occlusion*/ 1.0f, /*Roughness*/ 1.0f, /*Metalness*/ 0.0f, 1.0f)
+			glm::vec4(/*Occlusion*/ 1.0f, /*Roughness*/ 1.0f, /*Metalness*/ 0.0f, 1.0f),
+			"GLTF Default Occlusion-Metalness-Roughness"
 		);
 		if (!default_occlusion_metalness_roughness_tex)
 			return default_occlusion_metalness_roughness_tex.error();
 
-		auto default_emissive_tex = gltf::create_placeholder_image(device, glm::vec4(1.0f));
+		auto default_emissive_tex =
+			gltf::create_placeholder_image(device, glm::vec4(1.0f), "GLTF Default Emissive");
 		if (!default_emissive_tex) return default_emissive_tex.error();
 
-		auto default_normal_tex = gltf::create_placeholder_image(device, glm::vec4(0.5f, 0.5f, 1.0f, 1.0f));
+		auto default_normal_tex =
+			gltf::create_placeholder_image(device, glm::vec4(0.5f, 0.5f, 1.0f, 1.0f), "GLTF Default Normal");
 		if (!default_normal_tex) return default_normal_tex.error();
 
 		default_base_color = std::make_unique<gpu::Texture>(std::move(*default_base_color_tex));
@@ -213,8 +228,13 @@ namespace gltf
 
 		if (refcount.color_refcount > 0)
 		{
-			auto color_texture =
-				gltf::create_color_texture_from_image(device, image, image_config.color_mode, true);
+			auto color_texture = gltf::create_color_texture_from_image(
+				device,
+				image,
+				image_config.color_mode,
+				true,
+				std::format("GLTF Image '{}'", image.name)
+			);
 			if (!color_texture) return color_texture.error().forward("Load color image failed");
 
 			entry.color_texture = std::move(*color_texture);
@@ -222,8 +242,13 @@ namespace gltf
 
 		if (refcount.linear_refcount > 0)
 		{
-			auto linear_texture =
-				gltf::create_color_texture_from_image(device, image, image_config.color_mode, false);
+			auto linear_texture = gltf::create_color_texture_from_image(
+				device,
+				image,
+				image_config.color_mode,
+				false,
+				std::format("GLTF Image '{}'", image.name)
+			);
 			if (!linear_texture) return linear_texture.error().forward("Load linear image failed");
 
 			entry.linear_texture = std::move(*linear_texture);
@@ -231,8 +256,12 @@ namespace gltf
 
 		if (refcount.normal_refcount > 0)
 		{
-			auto normal_texture =
-				gltf::create_normal_texture_from_image(device, image, image_config.normal_mode);
+			auto normal_texture = gltf::create_normal_texture_from_image(
+				device,
+				image,
+				image_config.normal_mode,
+				std::format("GLTF Image '{}'", image.name)
+			);
 			if (!normal_texture) return normal_texture.error().forward("Load normal image failed");
 
 			entry.normal_texture = std::move(*normal_texture);
@@ -252,8 +281,8 @@ namespace gltf
 
 		const auto refcount_list = compute_image_refcounts(model);
 
-		std::mutex progress_mutex;
-		size_t progress_count = 0;
+		auto progress_mutex = std::make_shared<std::mutex>();
+		auto progress_count = std::make_shared<std::atomic<size_t>>(0);
 
 		dp::thread_pool thread_pool(std::thread::hardware_concurrency());
 
@@ -262,19 +291,28 @@ namespace gltf
 			| std::views::transform([&, total = refcount_list.size()](const auto& input) {
 				  const auto& [image, refcount] = input;
 
-				  return thread_pool.enqueue([&] {
-					  auto result = load_image_thread(device, image, image_config, refcount);
+				  return thread_pool.enqueue(
+					  [device,
+					   image_config,
+					   refcount,
+					   progress_mutex,
+					   progress_count,
+					   progress_callback,
+					   total,
+					   image]() {
+						  auto result = load_image_thread(device, image, image_config, refcount);
 
-					  // Update progress
-					  {
-						  std::scoped_lock lock(progress_mutex);
+						  // Update progress
+						  {
+							  std::scoped_lock lock(*progress_mutex);
 
-						  progress_count++;
-						  if (progress_callback) progress_callback(progress_count, total);
+							  (*progress_count)++;
+							  if (progress_callback) progress_callback((*progress_count).load(), total);
+						  }
+
+						  return result;
 					  }
-
-					  return result;
-				  });
+				  );
 			  })
 			| std::ranges::to<std::vector>();
 
@@ -368,7 +406,7 @@ namespace gltf
 		return SDL_GPUTextureSamplerBinding{.texture = texture, .sampler = sampler};
 	}
 
-	std::expected<Material_list, util::Error> Material_list::create_from_model(
+	std::expected<Material_list, util::Error> Material_list::from_tinygltf(
 		SDL_GPUDevice* device,
 		const tinygltf::Model& model,
 		const Sampler_config& sampler_config,

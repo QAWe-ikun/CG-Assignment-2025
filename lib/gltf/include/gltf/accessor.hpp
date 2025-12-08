@@ -16,15 +16,140 @@ namespace gltf
 {
 	namespace detail
 	{
-		///
-		/// @brief Check if the accessor matches the requested type.
-		///
-		/// @tparam T Requested type
-		/// @param accessor Target accessor
-		/// @return True if matches, false otherwise
-		///
 		template <typename T>
-		bool check_accessor_for_type(const tinygltf::Accessor& accessor) noexcept;
+		class Accessor_type_trait
+		{
+		  public:
+
+			static constexpr bool available = false;
+		};
+
+		template <>
+		class Accessor_type_trait<uint8_t>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
+			static constexpr int type = TINYGLTF_TYPE_SCALAR;
+		};
+
+		template <>
+		class Accessor_type_trait<uint16_t>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT;
+			static constexpr int type = TINYGLTF_TYPE_SCALAR;
+		};
+
+		template <>
+		class Accessor_type_trait<uint32_t>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT;
+			static constexpr int type = TINYGLTF_TYPE_SCALAR;
+		};
+
+		template <>
+		class Accessor_type_trait<float>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_FLOAT;
+			static constexpr int type = TINYGLTF_TYPE_SCALAR;
+		};
+
+		template <>
+		class Accessor_type_trait<glm::vec2>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_FLOAT;
+			static constexpr int type = TINYGLTF_TYPE_VEC2;
+		};
+
+		template <>
+		class Accessor_type_trait<glm::vec3>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_FLOAT;
+			static constexpr int type = TINYGLTF_TYPE_VEC3;
+		};
+
+		template <>
+		class Accessor_type_trait<glm::vec4>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_FLOAT;
+			static constexpr int type = TINYGLTF_TYPE_VEC4;
+		};
+
+		template <>
+		class Accessor_type_trait<glm::quat>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_FLOAT;
+			static constexpr int type = TINYGLTF_TYPE_VEC4;
+		};
+
+		template <>
+		class Accessor_type_trait<glm::u32vec4>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT;
+			static constexpr int type = TINYGLTF_TYPE_VEC4;
+		};
+
+		template <>
+		class Accessor_type_trait<glm::u16vec4>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT;
+			static constexpr int type = TINYGLTF_TYPE_VEC4;
+		};
+
+		template <>
+		class Accessor_type_trait<glm::u8vec4>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
+			static constexpr int type = TINYGLTF_TYPE_VEC4;
+		};
+
+		template <>
+		class Accessor_type_trait<glm::mat4>
+		{
+		  public:
+
+			static constexpr bool available = true;
+			static constexpr int component_type = TINYGLTF_COMPONENT_TYPE_FLOAT;
+			static constexpr int type = TINYGLTF_TYPE_MAT4;
+		};
+
+		template <typename T>
+		bool check_accessor_for_type(const tinygltf::Accessor& accessor) noexcept
+		{
+			return accessor.componentType == Accessor_type_trait<T>::component_type
+				&& accessor.type == Accessor_type_trait<T>::type;
+		}
 	}
 
 	///
@@ -36,6 +161,7 @@ namespace gltf
 	/// @return Extract result, or error on failure
 	///
 	template <typename T>
+		requires(detail::Accessor_type_trait<T>::available)
 	std::expected<std::vector<T>, util::Error> extract_from_accessor(
 		const tinygltf::Model& model,
 		const tinygltf::Accessor& accessor
@@ -87,28 +213,4 @@ namespace gltf
 	}
 
 	/* Template Instantiation */
-
-	namespace detail
-	{
-		template <>
-		bool check_accessor_for_type<uint16_t>(const tinygltf::Accessor& accessor) noexcept;
-
-		template <>
-		bool check_accessor_for_type<uint32_t>(const tinygltf::Accessor& accessor) noexcept;
-
-		template <>
-		bool check_accessor_for_type<float>(const tinygltf::Accessor& accessor) noexcept;
-
-		template <>
-		bool check_accessor_for_type<glm::vec2>(const tinygltf::Accessor& accessor) noexcept;
-
-		template <>
-		bool check_accessor_for_type<glm::vec3>(const tinygltf::Accessor& accessor) noexcept;
-
-		template <>
-		bool check_accessor_for_type<glm::vec4>(const tinygltf::Accessor& accessor) noexcept;
-
-		template <>
-		bool check_accessor_for_type<glm::quat>(const tinygltf::Accessor& accessor) noexcept;
-	}
 }

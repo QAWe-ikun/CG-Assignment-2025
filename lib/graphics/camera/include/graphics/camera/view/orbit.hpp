@@ -30,8 +30,8 @@ namespace graphics::camera::view
 
 		virtual ~Orbit() = default;
 
-		glm::dmat4 matrix() noexcept override;
-		glm::vec3 eye_position() noexcept override;
+		glm::dmat4 matrix() const noexcept override;
+		glm::vec3 eye_position() const noexcept override;
 
 		float distance;
 		float azimuth;

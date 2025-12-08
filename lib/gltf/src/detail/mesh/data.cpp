@@ -21,6 +21,54 @@ namespace gltf::detail::mesh
 		return extract_from_accessor<glm::vec3>(model, model.accessors[*position_accessor_idx]);
 	}
 
+	std::expected<std::vector<glm::u32vec4>, util::Error> get_raw_joint_indices(
+		const tinygltf::Model& model,
+		const tinygltf::Primitive& primitive
+	) noexcept
+	{
+		const auto joint_indices_accessor_idx = util::find_map(primitive.attributes, "JOINTS_0");
+
+		if (!joint_indices_accessor_idx) return util::Error("Primitive has no JOINTS_0 attribute");
+		if (joint_indices_accessor_idx->get() < 0) return util::Error("Primitive JOINTS_0 has no accessor");
+		if (std::cmp_greater_equal(joint_indices_accessor_idx->get(), model.accessors.size()))
+			return util::Error("Primitive JOINTS_0 accessor index out of bounds");
+
+		const auto& accessor = model.accessors[*joint_indices_accessor_idx];
+
+		switch (accessor.componentType)
+		{
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+			return extract_from_accessor<glm::u32vec4>(model, accessor);
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+			return extract_from_accessor<glm::u16vec4>(model, accessor)
+				.transform([](const std::vector<glm::u16vec4>& indices) {
+					return std::vector<glm::u32vec4>(std::from_range, indices);
+				});
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+			return extract_from_accessor<glm::u8vec4>(model, accessor)
+				.transform([](const std::vector<glm::u8vec4>& indices) {
+					return std::vector<glm::u32vec4>(std::from_range, indices);
+				});
+		default:
+			return util::Error("Primitive JOINTS_0 accessor has unsupported component type");
+		}
+	}
+
+	std::expected<std::vector<glm::vec4>, util::Error> get_raw_joint_weights(
+		const tinygltf::Model& model,
+		const tinygltf::Primitive& primitive
+	) noexcept
+	{
+		const auto joint_weights_accessor_idx = util::find_map(primitive.attributes, "WEIGHTS_0");
+
+		if (!joint_weights_accessor_idx) return util::Error("Primitive has no WEIGHTS_0 attribute");
+		if (joint_weights_accessor_idx->get() < 0) return util::Error("Primitive WEIGHTS_0 has no accessor");
+		if (std::cmp_greater_equal(joint_weights_accessor_idx->get(), model.accessors.size()))
+			return util::Error("Primitive WEIGHTS_0 accessor index out of bounds");
+
+		return extract_from_accessor<glm::vec4>(model, model.accessors[*joint_weights_accessor_idx]);
+	}
+
 	std::expected<std::optional<std::vector<glm::vec3>>, util::Error> get_raw_normals(
 		const tinygltf::Model& model,
 		const tinygltf::Primitive& primitive
@@ -111,6 +159,12 @@ namespace gltf::detail::mesh
 			if (!result) return result.error().forward("Extract uint16_t index data failed");
 			return std::optional(std::vector<uint32_t>(std::from_range, *result));
 		}
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+		{
+			auto result = extract_from_accessor<uint8_t>(model, model.accessors[primitive.indices]);
+			if (!result) return result.error().forward("Extract uint8_t index data failed");
+			return std::optional(std::vector<uint32_t>(std::from_range, *result));
+		}
 		default:
 			return util::Error(
 				std::format(
@@ -190,10 +244,54 @@ namespace gltf::detail::mesh
 		auto texcoord_vertices_result = rearrange_vertices(*remapped_texcoord_vertices, primitive.mode);
 		if (!texcoord_vertices_result)
 			return texcoord_vertices_result.error().forward(
-				"Rearrange triangle " + texcoord_name + " data failed"
+				std::format("Rearrange triangle {} data failed", texcoord_name)
 			);
 
 		return std::move(*texcoord_vertices_result);
+	}
+
+	std::expected<std::vector<glm::u32vec4>, util::Error> unpack_joint_indices(
+		const tinygltf::Model& model,
+		const tinygltf::Primitive& primitive,
+		const std::optional<std::vector<uint32_t>>& index
+	) noexcept
+	{
+		auto joint_indices_raw_result = get_raw_joint_indices(model, primitive);
+		if (!joint_indices_raw_result)
+			return joint_indices_raw_result.error().forward("Get primitive JOINTS_0 data failed");
+
+		auto remapped_joint_indices_vertices = unpack_from_indices(*joint_indices_raw_result, index);
+		if (!remapped_joint_indices_vertices)
+			return remapped_joint_indices_vertices.error().forward("Unpack JOINTS_0 from indices failed");
+
+		auto joint_indices_vertices_result =
+			rearrange_vertices(*remapped_joint_indices_vertices, primitive.mode);
+		if (!joint_indices_vertices_result)
+			return joint_indices_vertices_result.error().forward("Rearrange triangle JOINTS_0 data failed");
+
+		return std::move(*joint_indices_vertices_result);
+	}
+
+	std::expected<std::vector<glm::vec4>, util::Error> unpack_joint_weights(
+		const tinygltf::Model& model,
+		const tinygltf::Primitive& primitive,
+		const std::optional<std::vector<uint32_t>>& index
+	) noexcept
+	{
+		auto joint_weights_raw_result = get_raw_joint_weights(model, primitive);
+		if (!joint_weights_raw_result)
+			return joint_weights_raw_result.error().forward("Get primitive WEIGHTS_0 data failed");
+
+		auto remapped_joint_weights_vertices = unpack_from_indices(*joint_weights_raw_result, index);
+		if (!remapped_joint_weights_vertices)
+			return remapped_joint_weights_vertices.error().forward("Unpack WEIGHTS_0 from indices failed");
+
+		auto joint_weights_vertices_result =
+			rearrange_vertices(*remapped_joint_weights_vertices, primitive.mode);
+		if (!joint_weights_vertices_result)
+			return joint_weights_vertices_result.error().forward("Rearrange triangle WEIGHTS_0 data failed");
+
+		return std::move(*joint_weights_vertices_result);
 	}
 
 	std::expected<std::vector<glm::vec3>, util::Error> compute_tangents(

@@ -30,7 +30,10 @@ namespace gpu
 		/// @param first_slot First binding slot
 		/// @param samplers List of samplers
 		///
-		void bind_samplers(uint32_t first_slot, std::span<const SDL_GPUSampler> samplers) const noexcept;
+		void bind_samplers(
+			uint32_t first_slot,
+			std::span<const SDL_GPUTextureSamplerBinding> samplers
+		) const noexcept;
 
 		///
 		/// @brief Bind some samplers
@@ -38,11 +41,13 @@ namespace gpu
 		/// @param first_slot First binding slot
 		/// @param samplers Sampler packs, the first one is bound to first_slot, and so on
 		///
-		template <std::convertible_to<SDL_GPUSampler>... Args>
+		template <std::convertible_to<SDL_GPUTextureSamplerBinding>... Args>
 			requires(sizeof...(Args) > 0)
 		void bind_samplers(uint32_t first_slot, Args&&... samplers) const noexcept
 		{
-			const std::array<SDL_GPUSampler, sizeof...(Args)> sampler_arr = {std::forward<Args>(samplers)...};
+			const std::array<SDL_GPUTextureSamplerBinding, sizeof...(Args)> sampler_arr = {
+				std::forward<Args>(samplers)...
+			};
 			bind_samplers(first_slot, sampler_arr);
 		}
 
@@ -52,7 +57,10 @@ namespace gpu
 		/// @param first_slot First binding slot
 		/// @param textures List of textures
 		///
-		void bind_storage_textures(uint32_t first_slot, std::span<SDL_GPUTexture*> textures) const noexcept;
+		void bind_storage_textures(
+			uint32_t first_slot,
+			std::span<SDL_GPUTexture* const> textures
+		) const noexcept;
 
 		///
 		/// @brief Bind some storage textures
@@ -76,7 +84,10 @@ namespace gpu
 		/// @param first_slot First binding slot
 		/// @param buffers List of buffers
 		///
-		void bind_storage_buffers(uint32_t first_slot, std::span<const Buffer> buffers) const noexcept;
+		void bind_storage_buffers(
+			uint32_t first_slot,
+			std::span<SDL_GPUBuffer* const> buffers
+		) const noexcept;
 
 		///
 		/// @brief Bind some storage buffers
@@ -84,11 +95,11 @@ namespace gpu
 		/// @param first_slot First binding slot
 		/// @param buffers Buffer packs, the first one is bound to first_slot, and so on
 		///
-		template <std::convertible_to<Buffer>... Args>
+		template <std::convertible_to<SDL_GPUBuffer* const>... Args>
 			requires(sizeof...(Args) > 0)
 		void bind_storage_buffers(uint32_t first_slot, Args&&... buffers) const noexcept
 		{
-			const std::array<const Buffer, sizeof...(Args)> buffer_arr = {std::forward<Args>(buffers)...};
+			const std::array<SDL_GPUBuffer*, sizeof...(Args)> buffer_arr = {std::forward<Args>(buffers)...};
 			bind_storage_buffers(first_slot, buffer_arr);
 		}
 

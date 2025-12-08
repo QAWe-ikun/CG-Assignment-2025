@@ -5,6 +5,7 @@
 #include <span>
 
 #include "resource-box.hpp"
+#include "util/error.hpp"
 
 namespace gpu
 {
@@ -22,6 +23,20 @@ namespace gpu
 		Compute_pipeline& operator=(Compute_pipeline&&) noexcept = default;
 		~Compute_pipeline() noexcept = default;
 
+		struct Create_info
+		{
+			std::span<const std::byte> shader_data;
+			uint32_t num_samplers = 0;
+			uint32_t num_readonly_storage_textures = 0;
+			uint32_t num_readwrite_storage_textures = 0;
+			uint32_t num_readonly_storage_buffers = 0;
+			uint32_t num_readwrite_storage_buffers = 0;
+			uint32_t num_uniform_buffers = 0;
+			uint32_t threadcount_x;
+			uint32_t threadcount_y;
+			uint32_t threadcount_z;
+		};
+
 		///
 		/// @brief Create a compute pipeline
 		///
@@ -29,16 +44,7 @@ namespace gpu
 		///
 		static std::expected<Compute_pipeline, util::Error> create(
 			SDL_GPUDevice* device,
-			std::span<const std::byte> shader_data,
-			uint32_t num_samplers,
-			uint32_t num_readonly_storage_textures,
-			uint32_t num_readwrite_storage_textures,
-			uint32_t num_readonly_storage_buffers,
-			uint32_t num_readwrite_storage_buffers,
-			uint32_t num_uniform_buffers,
-			uint32_t threadcount_x,
-			uint32_t threadcount_y,
-			uint32_t threadcount_z
+			const Create_info& create_info
 		) noexcept;
 
 	  private:

@@ -12,8 +12,8 @@ namespace gpu
 	{
 		if (&other != this)
 		{
-			this->~Command_buffer();
-			new (this) Command_buffer(std::move(other));
+			std::swap(device, other.device);
+			std::swap(cmd_buffer, other.cmd_buffer);
 		}
 
 		return *this;

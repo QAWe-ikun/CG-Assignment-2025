@@ -48,7 +48,8 @@ namespace graphics
 			auto vertex_buffer = gpu::Buffer::create(
 				device,
 				{.vertex = true},
-				sizeof(glm::vec2) * fullscreen_triangle_vertices.size()
+				sizeof(glm::vec2) * fullscreen_triangle_vertices.size(),
+				"Fullscreen Pass Vertex Buffer"
 			);
 			if (!vertex_buffer) return vertex_buffer.error().forward("Create vertex buffer failed");
 
@@ -116,7 +117,7 @@ namespace graphics
 
 		std::expected<gpu::Graphics_pipeline, util::Error> create_fullscreen_pass(
 			SDL_GPUDevice* device,
-			const gpu::Graphic_shader& fragment,
+			const gpu::Graphics_shader& fragment,
 			gpu::Texture::Format target_format,
 			Fullscreen_blend_mode blend_mode,
 			std::optional<Fullscreen_stencil_state> stencil_state
@@ -133,10 +134,10 @@ namespace graphics
 				{.format = target_format.format, .blend_state = color_target_blend_state_by_mode(blend_mode)}
 			});
 
-			auto vertex_shader = gpu::Graphic_shader::create(
+			auto vertex_shader = gpu::Graphics_shader::create(
 				device,
 				shader_asset::fullscreen_vert,
-				gpu::Graphic_shader::Stage::Vertex,
+				gpu::Graphics_shader::Stage::Vertex,
 				0,
 				0,
 				0,
@@ -211,7 +212,7 @@ namespace graphics
 
 	std::expected<Fullscreen_pass<false>, util::Error> Fullscreen_pass<false>::create(
 		SDL_GPUDevice* device,
-		const gpu::Graphic_shader& fragment,
+		const gpu::Graphics_shader& fragment,
 		gpu::Texture::Format target_format,
 		Fullscreen_blend_mode mode,
 		std::optional<Fullscreen_stencil_state> stencil_state
@@ -236,7 +237,7 @@ namespace graphics
 
 	std::expected<Fullscreen_pass<true>, util::Error> Fullscreen_pass<true>::create(
 		SDL_GPUDevice* device,
-		const gpu::Graphic_shader& fragment,
+		const gpu::Graphics_shader& fragment,
 		gpu::Texture::Format target_format,
 		Config config
 	) noexcept

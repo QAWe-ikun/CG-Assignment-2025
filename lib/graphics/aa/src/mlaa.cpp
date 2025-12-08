@@ -39,42 +39,42 @@ namespace graphics::aa
 		auto sampler = gpu::Sampler::create(device, sampler_info);
 		if (!sampler) return sampler.error().forward("Create sampler failed");
 
-		auto shader1 = gpu::Graphic_shader::create(
+		auto shader1 = gpu::Graphics_shader::create(
 			device,
 			std::as_bytes(shader_asset::mlaa_pass1_frag),
-			gpu::Graphic_shader::Stage::Fragment,
+			gpu::Graphics_shader::Stage::Fragment,
 			1,
 			0,
 			0,
 			0
 		);
-		auto pass1 = std::move(shader1).and_then([device](gpu::Graphic_shader shader) {
+		auto pass1 = std::move(shader1).and_then([device](gpu::Graphics_shader shader) {
 			return Fullscreen_pass<true>::create(device, shader, edge_texture_format, {});
 		});
 
-		auto shader2 = gpu::Graphic_shader::create(
+		auto shader2 = gpu::Graphics_shader::create(
 			device,
 			std::as_bytes(shader_asset::mlaa_pass2_frag),
-			gpu::Graphic_shader::Stage::Fragment,
+			gpu::Graphics_shader::Stage::Fragment,
 			2,
 			0,
 			0,
 			0
 		);
-		auto pass2 = std::move(shader2).and_then([device](gpu::Graphic_shader shader) {
+		auto pass2 = std::move(shader2).and_then([device](gpu::Graphics_shader shader) {
 			return Fullscreen_pass<true>::create(device, shader, blend_texture_format, {});
 		});
 
-		auto shader3 = gpu::Graphic_shader::create(
+		auto shader3 = gpu::Graphics_shader::create(
 			device,
 			std::as_bytes(shader_asset::mlaa_pass3_frag),
-			gpu::Graphic_shader::Stage::Fragment,
+			gpu::Graphics_shader::Stage::Fragment,
 			2,
 			0,
 			0,
 			0
 		);
-		auto pass3 = std::move(shader3).and_then([&](gpu::Graphic_shader shader) {
+		auto pass3 = std::move(shader3).and_then([&](gpu::Graphics_shader shader) {
 			return Fullscreen_pass<true>::create(
 				device,
 				shader,
@@ -108,8 +108,8 @@ namespace graphics::aa
 		pass1(std::move(pass1)),
 		pass2(std::move(pass2)),
 		pass3(std::move(pass3)),
-		edge_texture(edge_texture_format),
-		blend_texture(blend_texture_format)
+		edge_texture(edge_texture_format, "MLAA Edge Texture"),
+		blend_texture(blend_texture_format, "MLAA Blend Texture")
 	{}
 
 	std::expected<void, util::Error> MLAA::run_antialiasing(

@@ -6,6 +6,7 @@
 #include <span>
 
 #include "resource-box.hpp"
+#include "util/error.hpp"
 
 namespace gpu
 {
@@ -13,15 +14,15 @@ namespace gpu
 	/// @brief graphics Shader Object
 	///
 	///
-	class Graphic_shader : public Resource_box<SDL_GPUShader>
+	class Graphics_shader : public Resource_box<SDL_GPUShader>
 	{
 	  public:
 
-		Graphic_shader(const Graphic_shader&) = delete;
-		Graphic_shader& operator=(const Graphic_shader&) = delete;
-		Graphic_shader(Graphic_shader&&) noexcept = default;
-		Graphic_shader& operator=(Graphic_shader&&) noexcept = default;
-		~Graphic_shader() noexcept = default;
+		Graphics_shader(const Graphics_shader&) = delete;
+		Graphics_shader& operator=(const Graphics_shader&) = delete;
+		Graphics_shader(Graphics_shader&&) noexcept = default;
+		Graphics_shader& operator=(Graphics_shader&&) noexcept = default;
+		~Graphics_shader() noexcept = default;
 
 		enum class Stage
 		{
@@ -32,7 +33,7 @@ namespace gpu
 		///
 		/// @brief Creates a graphics shader
 		///
-		static std::expected<Graphic_shader, util::Error> create(
+		static std::expected<Graphics_shader, util::Error> create(
 			SDL_GPUDevice* device,
 			std::span<const std::byte> shader_data,
 			Stage stage,
@@ -104,8 +105,8 @@ namespace gpu
 		///
 		static std::expected<Graphics_pipeline, util::Error> create(
 			SDL_GPUDevice* device,
-			const Graphic_shader& vertex_shader,
-			const Graphic_shader& fragment_shader,
+			const Graphics_shader& vertex_shader,
+			const Graphics_shader& fragment_shader,
 			SDL_GPUPrimitiveType primitive_type,
 			SDL_GPUSampleCount multisample_count,
 			const SDL_GPURasterizerState& rasterizer_state,

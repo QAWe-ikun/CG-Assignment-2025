@@ -19,7 +19,7 @@ namespace graphics::aa
 
 	std::expected<FXAA, util::Error> FXAA::create(SDL_GPUDevice* device, SDL_GPUTextureFormat format) noexcept
 	{
-		const auto shader_to_pass = [device, format](gpu::Graphic_shader fragment_shader) {
+		const auto shader_to_pass = [device, format](gpu::Graphics_shader fragment_shader) {
 			return graphics::Fullscreen_pass<true>::create(
 				device,
 				fragment_shader,
@@ -33,10 +33,10 @@ namespace graphics::aa
 		};
 
 		auto fullscreen_pass =
-			gpu::Graphic_shader::create(
+			gpu::Graphics_shader::create(
 				device,
 				std::as_bytes(shader_asset::fxaa_frag),
-				gpu::Graphic_shader::Stage::Fragment,
+				gpu::Graphics_shader::Stage::Fragment,
 				1,
 				0,
 				0,

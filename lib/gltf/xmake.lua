@@ -11,7 +11,7 @@ target("gltf")
 		"meshoptimizer",
 		"paul_thread_pool",
 		{public=true}
-	) 
+	)
 
 	add_files("src/**.cpp")
 	add_includedirs("include", {public=true})

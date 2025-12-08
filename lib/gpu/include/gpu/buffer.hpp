@@ -6,6 +6,7 @@
 #include <span>
 
 #include "resource-box.hpp"
+#include "util/error.hpp"
 
 namespace gpu
 {
@@ -37,6 +38,9 @@ namespace gpu
 			bool compute_storage_write : 1 = false;
 
 			operator SDL_GPUBufferUsageFlags(this Usage self) noexcept;
+
+			auto operator<=>(const Usage&) const = default;
+			bool operator==(const Usage&) const = default;
 		};
 
 		///
@@ -44,18 +48,15 @@ namespace gpu
 		///
 		/// @param usage Usage of the buffer
 		/// @param size Size of the buffer in bytes, must be greater than 0
+		/// @param name Optional name for the buffer
 		/// @return Buffer object, or error if failed
 		///
 		static std::expected<Buffer, util::Error> create(
 			SDL_GPUDevice* device,
 			Usage usage,
-			uint32_t size
+			uint32_t size,
+			const std::string& name
 		) noexcept;
-
-		///
-		/// @brief Set the name of the buffer
-		///
-		void set_name(const char* name) const noexcept;
 
 	  private:
 

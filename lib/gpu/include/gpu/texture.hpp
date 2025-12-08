@@ -4,6 +4,7 @@
 #include <expected>
 
 #include "resource-box.hpp"
+#include "util/error.hpp"
 
 namespace gpu
 {
@@ -29,15 +30,9 @@ namespace gpu
 		///
 		static std::expected<Texture, util::Error> create(
 			SDL_GPUDevice* device,
-			const SDL_GPUTextureCreateInfo& create_info
+			const SDL_GPUTextureCreateInfo& create_info,
+			const std::string& name
 		) noexcept;
-
-		///
-		/// @brief Set Texture Name
-		///
-		/// @param name Name
-		///
-		void set_name(const char* name) const noexcept;
 
 		struct Usage
 		{
@@ -87,6 +82,14 @@ namespace gpu
 			///
 			bool supported_on(SDL_GPUDevice* device) const noexcept;
 		};
+
+		///
+		/// @brief Bind texture with sampler, and returns binding structure
+		///
+		/// @param sampler Sampler to bind with
+		/// @return Binding structure
+		///
+		SDL_GPUTextureSamplerBinding bind_with_sampler(SDL_GPUSampler* sampler) const noexcept;
 
 	  private:
 

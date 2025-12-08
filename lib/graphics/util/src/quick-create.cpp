@@ -8,10 +8,11 @@ namespace graphics
 	std::expected<gpu::Buffer, util::Error> create_buffer_from_data(
 		SDL_GPUDevice* device,
 		gpu::Buffer::Usage usage,
-		std::span<const std::byte> data
+		std::span<const std::byte> data,
+		const std::string& name
 	) noexcept
 	{
-		auto buffer = gpu::Buffer::create(device, usage, data.size());
+		auto buffer = gpu::Buffer::create(device, usage, data.size(), name);
 		if (!buffer) return buffer.error().forward("Create buffer failed");
 
 		auto transfer_buffer = gpu::Transfer_buffer::create_from_data(device, data);
@@ -29,10 +30,13 @@ namespace graphics
 	std::expected<gpu::Texture, util::Error> detail::create_texture_from_image_internal(
 		SDL_GPUDevice* device,
 		gpu::Texture::Format format,
-		Image_data image
+		Image_data image,
+		const std::string& name
 	) noexcept
 	{
-		auto texture = gpu::Texture::create(device, format.create(image.size.x, image.size.y, 1, 1));
+		if (!format.supported_on(device)) return util::Error("Texture format not supported on device");
+
+		auto texture = gpu::Texture::create(device, format.create(image.size.x, image.size.y, 1, 1), name);
 		if (!texture) return texture.error().forward("Create texture failed");
 
 		auto transfer_buffer = gpu::Transfer_buffer::create_from_data(device, image.pixels);
@@ -69,12 +73,16 @@ namespace graphics
 	std::expected<gpu::Texture, util::Error> detail::create_texture_from_mipmap_internal(
 		SDL_GPUDevice* device,
 		gpu::Texture::Format format,
-		std::span<const Image_data> mipmap_chain
+		std::span<const Image_data> mipmap_chain,
+		const std::string& name
 	) noexcept
 	{
+		if (!format.supported_on(device)) return util::Error("Texture format not supported on device");
+
 		auto texture = gpu::Texture::create(
 			device,
-			format.create(mipmap_chain[0].size.x, mipmap_chain[0].size.y, 1, mipmap_chain.size())
+			format.create(mipmap_chain[0].size.x, mipmap_chain[0].size.y, 1, mipmap_chain.size()),
+			name
 		);
 		if (!texture) return texture.error().forward("Create texture failed");
 

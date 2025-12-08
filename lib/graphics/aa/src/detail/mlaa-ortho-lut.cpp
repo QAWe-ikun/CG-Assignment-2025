@@ -155,6 +155,7 @@ namespace graphics::aa
 			.pixels = generate_ortho_area_lut_data(lut_size)
 		};
 
-		return graphics::create_texture_from_image(device, lut_texture_format, image);
+		return graphics::create_texture_from_image(device, lut_texture_format, image, "MLAA Ortho Area LUT")
+			.transform_error(util::Error::forward_fn("Create Ortho Area LUT Texture Failed"));
 	}
 }

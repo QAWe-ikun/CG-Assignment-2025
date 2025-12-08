@@ -21,13 +21,13 @@ namespace graphics::camera
 		///
 		/// @return View matrix
 		///
-		virtual glm::dmat4 matrix() noexcept = 0;
+		virtual glm::dmat4 matrix() const noexcept = 0;
 
 		///
 		/// @brief Get the eye position in world space
 		///
 		/// @return Eye position
 		///
-		virtual glm::vec3 eye_position() noexcept = 0;
+		virtual glm::vec3 eye_position() const noexcept = 0;
 	};
 }

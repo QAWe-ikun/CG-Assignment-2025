@@ -1,4 +1,4 @@
-add_rules("mode.debug", "mode.release", "mode.releasedbg")
+add_rules("mode.debug", "mode.release", "mode.releasedbg", "mode.asan")
 set_policy("build.warning", true)
 set_policy("build.intermediate_directory", false)
 set_policy("run.autobuild", true)
@@ -18,18 +18,21 @@ add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_ENABLE_EXPERIMENTAL", "GLM_FORCE
 add_defines("TINYGLTF_NOEXCEPTION")
 
 add_requires(
-	"libsdl3 3.2.26",
+	"libsdl3 main",
 	"glm 1.0.2",
 	"gzip-hpp v0.1.0",
 	"stb 2025.03.14",
 	"tinygltf v2.9.6",
 	"meshoptimizer v0.25",
-	"paul_thread_pool 0.7.0"
+	"paul_thread_pool 0.7.0",
+	"vulkan-headers 1.4.309+0",
+	"boost 1.89.0"
 )
 add_requires(
 	"imgui v1.92.1-docking", 
 	{configs={sdl3=true, sdl3_gpu=true, wchar32=true}}
 )
-add_requireconfs("imgui.libsdl3", {override=true, version="3.2.26"})
+add_requireconfs("imgui.libsdl3", {override=true, version="main"})
+add_requireconfs("boost", {configs={cmake=false}})
 
 includes("project", "lib")

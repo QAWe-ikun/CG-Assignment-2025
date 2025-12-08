@@ -1,0 +1,49 @@
+// Compute and lerp the average log-luminance from histogram data
+
+#version 460
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, set = 0, binding = 0) readonly buffer Src
+{
+    uint bins[256];
+    uint weight_sum;
+};
+
+layout(std430, set = 0, binding = 1) readonly buffer Prev
+{
+    float previous_avg;
+};
+
+layout(std430, set = 1, binding = 0) buffer Dst
+{
+    float current_avg;
+};
+
+layout(std140, set = 2, binding = 0) uniform Params
+{
+    float min_histogram_value;
+    float log_min_histogram_value; // = log2(min)
+    float dynamic_range; // = log2(max) - log2(min)
+    float adaptation_rate;
+};
+
+const float fix_exponent = 2.2;
+
+void main()
+{
+    float bin_average = 0.0; // average bin index (0..255)
+
+    #pragma unroll 4
+    for (uint i = 0; i < 256; ++i)
+        bin_average += bins[i] * pow(float(i) / 255, fix_exponent);
+
+    bin_average /= float(weight_sum);
+    bin_average = pow(bin_average, 1.0 / fix_exponent);
+
+    float log_avg_luminance = log_min_histogram_value + bin_average * dynamic_range;
+    float current_luminance = exp2(log_avg_luminance);
+    current_luminance = max(current_luminance, 1e-8);
+
+    current_avg = mix(previous_avg, current_luminance, adaptation_rate);
+}

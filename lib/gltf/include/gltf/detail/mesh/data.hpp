@@ -2,6 +2,7 @@
 
 #include "util/error.hpp"
 #include <expected>
+#include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <optional>
 #include <tiny_gltf.h>
@@ -9,8 +10,24 @@
 
 namespace gltf::detail::mesh
 {
+	/* ACQUIRING RAW DATA*/
+	// This part extracts raw attribute data from the glTF primitive accessors, which is possibly still
+	// indexed
+
 	// Get raw positions, indexed by original indices
 	std::expected<std::vector<glm::vec3>, util::Error> get_raw_positions(
+		const tinygltf::Model& model,
+		const tinygltf::Primitive& primitive
+	) noexcept;
+
+	// Get raw joint indices, indexed by original indices
+	std::expected<std::vector<glm::u32vec4>, util::Error> get_raw_joint_indices(
+		const tinygltf::Model& model,
+		const tinygltf::Primitive& primitive
+	) noexcept;
+
+	// Get raw joint weights, indexed by original indices
+	std::expected<std::vector<glm::vec4>, util::Error> get_raw_joint_weights(
 		const tinygltf::Model& model,
 		const tinygltf::Primitive& primitive
 	) noexcept;
@@ -33,6 +50,10 @@ namespace gltf::detail::mesh
 		const tinygltf::Model& model,
 		const tinygltf::Primitive& primitive
 	) noexcept;
+
+	/* UNPACK INDEXED DATA */
+	// This part unpacks the raw attribute data according to the index data. Some attributes may also need
+	// extra processing
 
 	///
 	/// @brief Unpack position data from the primitive
@@ -76,7 +97,7 @@ namespace gltf::detail::mesh
 	///
 	/// @brief Unpack texcoord data from the primitive
 	/// @details This function does the following:
-	/// 1. Acqurie the raw TEXCOORD data from the primitive
+	/// 1. Acquire the raw TEXCOORD data from the primitive
 	/// 2. If index is present, unpack the TEXCOORD data according to the index
 	/// 3. Expand to triangle list if the primitive is in triangle fan or triangle strip mode
 	///
@@ -91,6 +112,40 @@ namespace gltf::detail::mesh
 		const tinygltf::Primitive& primitive,
 		const std::optional<std::vector<uint32_t>>& index,
 		const std::string& texcoord_name
+	) noexcept;
+
+	///
+	/// @brief Unpack joint indices data from the primitive
+	/// @details This function does the following:
+	/// 1. Acquire the raw JOINTS_0 data from the primitive
+	/// 2. If index is present, unpack the JOINTS_0 data according to the index
+	/// 3. Expand to triangle list if the primitive is in triangle fan or triangle strip mode
+	/// @param model Tinygltf model
+	/// @param primitive Tinygltf primitive
+	/// @param index Optional index data
+	/// @return JOINTS_0 attribute data on success, or error on failure
+	///
+	std::expected<std::vector<glm::u32vec4>, util::Error> unpack_joint_indices(
+		const tinygltf::Model& model,
+		const tinygltf::Primitive& primitive,
+		const std::optional<std::vector<uint32_t>>& index
+	) noexcept;
+
+	///
+	/// @brief Unpack joint weights data from the primitive
+	/// @details This function does the following:
+	/// 1. Acquire the raw WEIGHTS_0 data from the primitive
+	/// 2. If index is present, unpack the WEIGHTS_0 data according to the index
+	/// 3. Expand to triangle list if the primitive is in triangle fan or triangle strip mode
+	/// @param model Tinygltf model
+	/// @param primitive Tinygltf primitive
+	/// @param index Optional index data
+	/// @return WEIGHTS_0 attribute data on success, or error on failure
+	///
+	std::expected<std::vector<glm::vec4>, util::Error> unpack_joint_weights(
+		const tinygltf::Model& model,
+		const tinygltf::Primitive& primitive,
+		const std::optional<std::vector<uint32_t>>& index
 	) noexcept;
 
 	///

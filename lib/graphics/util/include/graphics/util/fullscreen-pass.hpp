@@ -56,7 +56,7 @@ namespace graphics
 		///
 		static std::expected<Fullscreen_pass<false>, util::Error> create(
 			SDL_GPUDevice* device,
-			const gpu::Graphic_shader& fragment,
+			const gpu::Graphics_shader& fragment,
 			gpu::Texture::Format target_format,
 			Fullscreen_blend_mode blend_mode,
 			std::optional<Fullscreen_stencil_state> stencil_state = std::nullopt
@@ -124,7 +124,7 @@ namespace graphics
 		///
 		static std::expected<Fullscreen_pass<true>, util::Error> create(
 			SDL_GPUDevice* device,
-			const gpu::Graphic_shader& fragment,
+			const gpu::Graphics_shader& fragment,
 			gpu::Texture::Format target_format,
 			Config config
 		) noexcept;

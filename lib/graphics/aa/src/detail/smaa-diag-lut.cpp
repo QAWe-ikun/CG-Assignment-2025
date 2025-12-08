@@ -231,6 +231,12 @@ namespace graphics::aa
 			.pixels = generate_diagonal_area_lut_data(lut_size)
 		};
 
-		return graphics::create_texture_from_image(device, lut_texture_format, image);
+		return graphics::create_texture_from_image(
+				   device,
+				   lut_texture_format,
+				   image,
+				   "SMAA Diagonal Area LUT"
+		)
+			.transform_error(util::Error::forward_fn("Create Diagonal Area LUT Texture Failed"));
 	}
 }

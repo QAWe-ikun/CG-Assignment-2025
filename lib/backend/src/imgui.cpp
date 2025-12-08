@@ -55,16 +55,6 @@ namespace backend
 		style.Colors[ImGuiCol_PlotLinesHovered] = style.Colors[ImGuiCol_ButtonHovered];
 	}
 
-	struct ImGui_cleaner
-	{
-		~ImGui_cleaner() noexcept
-		{
-			ImGui_ImplSDLGPU3_Shutdown();
-			ImGui_ImplSDL3_Shutdown();
-			ImGui::DestroyContext();
-		}
-	};
-
 	std::expected<void, util::Error> initialize_imgui(const SDL_context& sdl_context) noexcept
 	{
 		IMGUI_CHECKVERSION();
@@ -92,6 +82,13 @@ namespace backend
 		style.FontScaleDpi = main_scale;
 
 		return {};
+	}
+
+	void destroy_imgui() noexcept
+	{
+		ImGui_ImplSDLGPU3_Shutdown();
+		ImGui_ImplSDL3_Shutdown();
+		ImGui::DestroyContext();
 	}
 
 	void imgui_handle_event(const SDL_Event* event) noexcept

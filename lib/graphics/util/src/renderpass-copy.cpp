@@ -32,10 +32,10 @@ namespace graphics
 			return util::Error(std::format("Unsupported channel count for Renderpass_copy: {}", channels));
 		}
 
-		auto fragment_shader = gpu::Graphic_shader::create(
+		auto fragment_shader = gpu::Graphics_shader::create(
 			device,
 			fragment_code,
-			gpu::Graphic_shader::Stage::Fragment,
+			gpu::Graphics_shader::Stage::Fragment,
 			1,
 			0,
 			0,

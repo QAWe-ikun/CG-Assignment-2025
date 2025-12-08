@@ -11,7 +11,7 @@ namespace graphics::camera::view
 		return glm::abs(glm::dot(a_norm, b_norm)) > 0.999f;
 	}
 
-	glm::dmat4 Lookat::matrix() noexcept
+	glm::dmat4 Lookat::matrix() const noexcept
 	{
 		if (is_parallel(center - eye, up)) [[unlikely]]
 		{
@@ -24,7 +24,7 @@ namespace graphics::camera::view
 		return glm::lookAt<double, glm::packed_highp>(eye, center, up);
 	}
 
-	glm::vec3 Lookat::eye_position() noexcept
+	glm::vec3 Lookat::eye_position() const noexcept
 	{
 		return eye;
 	}

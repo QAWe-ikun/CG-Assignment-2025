@@ -6,7 +6,8 @@ namespace gpu
 	std::expected<Buffer, util::Error> Buffer::create(
 		SDL_GPUDevice* device,
 		Usage usage,
-		uint32_t size
+		uint32_t size,
+		const std::string& name
 	) noexcept
 	{
 		assert(device != nullptr);
@@ -17,6 +18,8 @@ namespace gpu
 
 		auto* const buffer = SDL_CreateGPUBuffer(device, &create_info);
 		if (buffer == nullptr) RETURN_SDL_ERROR;
+
+		SDL_SetGPUBufferName(device, buffer, name.c_str());
 
 		return Buffer(device, buffer);
 	}
@@ -128,14 +131,6 @@ namespace gpu
 			return upload_result.error().forward("Upload data failed");
 
 		return transfer_buffer;
-	}
-
-	void Buffer::set_name(const char* name) const noexcept
-	{
-		assert(resource != nullptr);
-		assert(device != nullptr);
-
-		SDL_SetGPUBufferName(device, resource, name);
 	}
 
 }

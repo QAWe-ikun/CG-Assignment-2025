@@ -29,20 +29,19 @@ namespace gltf
 		Blend
 	};
 
+	// Pipeline mode
+	struct Pipeline_mode
+	{
+		Alpha_mode alpha_mode = Alpha_mode::Opaque;
+		bool double_sided = false;
+
+		std::strong_ordering operator<=>(const Pipeline_mode&) const noexcept = default;
+		bool operator==(const Pipeline_mode&) const noexcept = default;
+	};
+
 	// Material Parameters
 	struct Material_params
 	{
-		// Pipeline mode
-		struct Pipeline
-		{
-			Alpha_mode alpha_mode = Alpha_mode::Opaque;
-			bool double_sided = false;
-			bool rigged = false;
-
-			std::strong_ordering operator<=>(const Pipeline&) const noexcept = default;
-			bool operator==(const Pipeline&) const noexcept = default;
-		};
-
 		// Material factors
 		struct Factor
 		{
@@ -56,7 +55,7 @@ namespace gltf
 		};
 
 		Factor factor = {};
-		Pipeline pipeline = {};
+		Pipeline_mode pipeline = {};
 	};
 
 	// Material object, with textures stored as indices to external texture list
@@ -156,7 +155,7 @@ namespace gltf
 		/// @param progress_callback Progress callback, refer to `Load_progress_callback`
 		/// @return Material_list on success, or error on failure
 		///
-		static std::expected<Material_list, util::Error> create_from_model(
+		static std::expected<Material_list, util::Error> from_tinygltf(
 			SDL_GPUDevice* device,
 			const tinygltf::Model& model,
 			const Sampler_config& sampler_config,

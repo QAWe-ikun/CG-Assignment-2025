@@ -64,7 +64,6 @@ namespace image
 	template <Precision P, Format F>
 	std::expected<Image<P, F>, util::Error> load_from_memory(std::span<const std::byte> data) noexcept
 	{
-		stbi_set_flip_vertically_on_load(1);
 		const auto [pixels, width, height, channels] =
 			internal::load_from_memory<P>(data, static_cast<int>(F));
 

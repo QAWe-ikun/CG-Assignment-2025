@@ -33,6 +33,8 @@ namespace backend
 	///
 	std::expected<void, util::Error> initialize_imgui(const SDL_context& sdl_context) noexcept;
 
+	void destroy_imgui() noexcept;
+
 	///
 	/// @brief Pass an SDL event to ImGui for processing
 	/// @note Call this function for each SDL event in the event loop.

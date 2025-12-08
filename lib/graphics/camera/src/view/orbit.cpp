@@ -1,5 +1,6 @@
 #include "graphics/camera/view/orbit.hpp"
 
+#include <glm/ext/scalar_constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace graphics::camera::view
@@ -12,14 +13,13 @@ namespace graphics::camera::view
 		up(up)
 	{}
 
-	glm::dmat4 Orbit::matrix() noexcept
+	glm::dmat4 Orbit::matrix() const noexcept
 	{
-		pitch = glm::clamp(pitch, -glm::half_pi<float>() + 0.001f, glm::half_pi<float>() - 0.001f);
 		const glm::vec3 eye = this->eye_position();
 		return glm::lookAt(eye, center, up);
 	}
 
-	glm::vec3 Orbit::eye_position() noexcept
+	glm::vec3 Orbit::eye_position() const noexcept
 	{
 		return {
 			center.x + distance * glm::cos(pitch) * glm::sin(azimuth),
@@ -57,5 +57,7 @@ namespace graphics::camera::view
 
 		orbit.azimuth += azimuth_delta;
 		orbit.pitch += pitch_delta;
+
+		orbit.pitch = glm::clamp(orbit.pitch, -glm::pi<float>() / 2 + 0.001f, glm::pi<float>() / 2 - 0.001f);
 	}
 }

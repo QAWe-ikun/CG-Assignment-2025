@@ -1,4 +1,5 @@
 #include "gltf/model.hpp"
+#include "gltf/skin.hpp"
 #include "graphics/culling.hpp"
 
 #include <algorithm>
@@ -9,15 +10,16 @@
 
 namespace gltf
 {
+	// Parse root nodes from tinygltf model
 	static std::expected<std::vector<uint32_t>, util::Error> parse_root_nodes(
 		const tinygltf::Model& model
 	) noexcept
 	{
 		uint32_t index;
 
-		if (model.scenes.size() == 1)
+		if (model.scenes.size() == 1)  // Only one scene
 			index = 0;
-		else
+		else  // Multiple scenes, select `defaultScene` for root nodes
 		{
 			if (model.defaultScene < 0) return util::Error("No default scene specified with multiple scenes");
 			if (std::cmp_greater_equal(model.defaultScene, model.scenes.size()))
@@ -28,6 +30,7 @@ namespace gltf
 
 		const auto& nodes = model.scenes[index].nodes;
 
+		// Out of bound check
 		if (std::ranges::any_of(nodes, [&](int node_index) {
 				return std::cmp_greater_equal(node_index, model.nodes.size());
 			}))
@@ -95,61 +98,83 @@ namespace gltf
 		return {};
 	}
 
-	static std::expected<std::vector<Mesh_gpu>, util::Error> load_meshes(
-		SDL_GPUDevice* device,
-		const tinygltf::Model& tinygltf_model,
-		const std::optional<std::reference_wrapper<std::atomic<Model::Load_progress>>>& progress
-	) noexcept
+	namespace detail
 	{
-		std::mutex progress_mutex;
-		uint32_t progress_count = 0;
-		dp::thread_pool thread_pool(std::thread::hardware_concurrency());
+		static std::expected<std::vector<Mesh_gpu>, util::Error> load_meshes(
+			SDL_GPUDevice* device,
+			const tinygltf::Model& tinygltf_model,
+			const std::optional<std::reference_wrapper<std::atomic<Model::Load_progress>>>& progress
+		) noexcept
+		{
+			std::mutex progress_mutex;
+			uint32_t progress_count = 0;
+			dp::thread_pool thread_pool(std::thread::hardware_concurrency());
 
-		const auto task =
-			[device, &progress, &progress_count, &progress_mutex, &tinygltf_model](
-				const tinygltf::Mesh& tinygltf_mesh
-			) -> std::expected<Mesh_gpu, util::Error> {
-			auto mesh_cpu = Mesh::from_tinygltf(tinygltf_model, tinygltf_mesh);
-			if (!mesh_cpu) return mesh_cpu.error().forward("Create mesh from tinygltf failed");
+			const auto task =
+				[device, &progress, &progress_count, &progress_mutex, &tinygltf_model](
+					const tinygltf::Mesh& tinygltf_mesh
+				) -> std::expected<Mesh_gpu, util::Error> {
+				auto mesh_cpu = Mesh::from_tinygltf(tinygltf_model, tinygltf_mesh);
+				if (!mesh_cpu) return mesh_cpu.error().forward("Create mesh from tinygltf failed");
 
-			auto mesh_gpu = Mesh_gpu::from_mesh(device, *mesh_cpu);
-			if (!mesh_gpu) return mesh_gpu.error().forward("Create mesh GPU resources failed");
+				auto mesh_gpu = Mesh_gpu::from_mesh(device, *mesh_cpu);
+				if (!mesh_gpu) return mesh_gpu.error().forward("Create mesh GPU resources failed");
 
+				{
+					std::scoped_lock lock(progress_mutex);
+					progress_count++;
+
+					if (progress.has_value())
+						progress->get() = {
+							.stage = Model::Load_stage::Mesh,
+							.progress = float(progress_count) / tinygltf_model.meshes.size()
+						};
+				}
+
+				return mesh_gpu;
+			};
+
+			std::vector<std::future<std::expected<Mesh_gpu, util::Error>>> mesh_futures =
+				tinygltf_model.meshes
+				| std::views::transform([&](const auto& tinygltf_mesh) {
+					  return thread_pool.enqueue(std::bind(task, tinygltf_mesh));
+				  })
+				| std::ranges::to<std::vector>();
+
+			thread_pool.wait_for_tasks();
+
+			std::vector<Mesh_gpu> meshes;
+			for (auto [idx, future] : mesh_futures | std::views::enumerate)
 			{
-				std::scoped_lock lock(progress_mutex);
-				progress_count++;
-
-				if (progress.has_value())
-					progress->get() = {
-						.stage = Model::Load_stage::Mesh,
-						.progress = float(progress_count) / tinygltf_model.meshes.size()
-					};
+				auto result = future.get();
+				if (!result) return result.error().forward(std::format("Load mesh failed at index {}", idx));
+				meshes.emplace_back(std::move(*result));
 			}
 
-			return mesh_gpu;
-		};
-
-		std::vector<std::future<std::expected<Mesh_gpu, util::Error>>> mesh_futures =
-			tinygltf_model.meshes
-			| std::views::transform([&](const auto& tinygltf_mesh) {
-				  return thread_pool.enqueue(std::bind(task, tinygltf_mesh));
-			  })
-			| std::ranges::to<std::vector>();
-
-		thread_pool.wait_for_tasks();
-
-		std::vector<Mesh_gpu> meshes;
-		for (auto [idx, future] : mesh_futures | std::views::enumerate)
-		{
-			auto result = future.get();
-			if (!result) return result.error().forward(std::format("Load mesh failed at index {}", idx));
-			meshes.emplace_back(std::move(*result));
+			return std::move(meshes);
 		}
 
-		return std::move(meshes);
+		static std::expected<std::vector<Animation>, util::Error> load_animations(
+			const tinygltf::Model& tinygltf_model
+		) noexcept
+		{
+			std::vector<Animation> animations;
+			animations.reserve(tinygltf_model.animations.size());
+
+			for (const auto& tinygltf_animation : tinygltf_model.animations)
+			{
+				auto animation_result = Animation::from_tinygltf(tinygltf_model, tinygltf_animation);
+				if (!animation_result)
+					return animation_result.error().forward("Create animation from tinygltf failed");
+
+				animations.emplace_back(std::move(*animation_result));
+			}
+
+			return std::move(animations);
+		}
 	}
 
-	std::expected<Model, util::Error> Model::load_model(
+	std::expected<Model, util::Error> Model::from_tinygltf(
 		SDL_GPUDevice* device,
 		const tinygltf::Model& tinygltf_model,
 		const Sampler_config& sampler_config,
@@ -179,13 +204,13 @@ namespace gltf
 
 		if (progress) progress->get() = {.stage = Load_stage::Mesh, .progress = 0};
 
-		auto mesh_result = load_meshes(device, tinygltf_model, progress);
+		auto mesh_result = detail::load_meshes(device, tinygltf_model, progress);
 		if (!mesh_result) return mesh_result.error().forward("Load meshes failed");
 
 		/* Load Materials */
 
 		if (progress) progress->get() = {.stage = Load_stage::Material, .progress = 0};
-		auto material_list_result = Material_list::create_from_model(
+		auto material_list_result = Material_list::from_tinygltf(
 			device,
 			tinygltf_model,
 			sampler_config,
@@ -200,6 +225,20 @@ namespace gltf
 		);
 		if (!material_list_result) return material_list_result.error().forward("Load material failed");
 
+		/* Load Animations */
+
+		if (progress) progress->get() = {.stage = Load_stage::Animation, .progress = std::nullopt};
+
+		auto animation_result = detail::load_animations(tinygltf_model);
+		if (!animation_result) return animation_result.error().forward("Load animations failed");
+
+		/* Load Skins */
+
+		if (progress) progress->get() = {.stage = Load_stage::Skin, .progress = std::nullopt};
+
+		auto skin_collection_result = Skin_list::from_tinygltf(tinygltf_model);
+		if (!skin_collection_result) return skin_collection_result.error().forward("Load skins failed");
+
 		/* Post Process */
 
 		if (progress) progress->get() = {.stage = Load_stage::Postprocess, .progress = std::nullopt};
@@ -208,7 +247,9 @@ namespace gltf
 			std::move(*material_list_result),
 			std::move(*mesh_result),
 			std::move(nodes),
-			std::move(*root_nodes_result)
+			std::move(*animation_result),
+			std::move(*root_nodes_result),
+			std::move(*skin_collection_result)
 		);
 
 		model.compute_node_parents();
@@ -230,12 +271,16 @@ namespace gltf
 		Material_list material_list,
 		std::vector<Mesh_gpu> meshes,
 		std::vector<Node> nodes,
-		std::vector<uint32_t> root_nodes
+		std::vector<Animation> animations,
+		std::vector<uint32_t> root_nodes,
+		Skin_list skin_collection
 	) noexcept :
 		material_list(std::move(material_list)),
 		meshes(std::move(meshes)),
 		nodes(std::move(nodes)),
+		animations(std::move(animations)),
 		root_nodes(std::move(root_nodes)),
+		skin_list(std::move(skin_collection)),
 		primitive_count(
 			std::ranges::fold_left(
 				meshes | std::views::transform([](const Mesh_gpu& mesh) { return mesh.primitives.size(); }),
@@ -243,12 +288,46 @@ namespace gltf
 				std::plus()
 			)
 		)
-	{}
+	{
+		for (auto [idx, animation] : this->animations | std::views::enumerate)
+			if (animation.name.has_value()) animation_name_map[*animation.name] = idx;
+	}
 
-	Drawdata Model::generate_drawdata(const glm::mat4& model_transform) noexcept
+	std::vector<Node::Transform_override> Model::compute_node_overrides(
+		std::span<const Animation_key> animation
+	) const noexcept
+	{
+		std::vector<Node::Transform_override> node_overrides(nodes.size());
+
+		for (const auto& key : animation)
+		{
+			if (std::holds_alternative<uint32_t>(key.animation))
+			{
+				const auto animation_index = std::get<uint32_t>(key.animation);
+				if (animation_index >= animations.size()) continue;
+				animations[animation_index].apply(node_overrides, key.time);
+			}
+			else
+			{
+				const auto& animation_name = std::get<std::string>(key.animation);
+				const auto it = animation_name_map.find(animation_name);
+				if (it == animation_name_map.end()) continue;
+
+				const auto animation_index = it->second;
+				if (animation_index >= animations.size()) continue;
+				animations[animation_index].apply(node_overrides, key.time);
+			}
+		}
+
+		return node_overrides;
+	}
+
+	std::vector<glm::mat4> Model::compute_node_world_matrices(
+		const glm::mat4& model_transform,
+		std::span<const Node::Transform_override> node_overrides
+	) const noexcept
 	{
 		std::vector<glm::mat4> node_world_matrices(nodes.size(), glm::mat4(1.0f));
-		std::vector<gltf::Node::Transform_override> node_overrides(nodes.size());
 
 		for (const auto node_index : node_topo_order)
 		{
@@ -257,46 +336,116 @@ namespace gltf
 			const auto parent_matrix =
 				node_parents[node_index]
 					.transform([&node_world_matrices](uint32_t parent_index) {
-						return std::ref<const glm::mat4>(node_world_matrices[parent_index]);
+						return std::cref(node_world_matrices[parent_index]);
 					})
-					.value_or(std::ref<const glm::mat4>(model_transform));
+					.value_or(std::ref(model_transform));
 
 			node_world_matrices[node_index] =
 				parent_matrix.get() * node.get_local_transform(node_overrides[node_index]);
 		}
 
+		return node_world_matrices;
+	}
+
+	std::vector<Primitive_drawcall> Model::compute_drawcalls(
+		const std::vector<glm::mat4>& node_world_matrices
+	) const noexcept
+	{
 		std::vector<Primitive_drawcall> drawdata_list;
 		drawdata_list.reserve(primitive_count);
 
 		for (const auto node_index : node_topo_order)
 		{
 			const auto& node = nodes[node_index];
-
 			if (!renderable_nodes[node_index] || !node.mesh.has_value()) [[unlikely]]
 				continue;
 
 			const auto& mesh = meshes[node.mesh.value()];
-			const glm::mat4& world_matrix = node_world_matrices[node_index];
 
-			for (const auto& primitive : mesh.primitives)
+			if (node.skin.has_value())  // Rigged
 			{
-				const auto [gen_data, local_min, local_max] = primitive.gen_drawdata();
-				const auto [world_min, world_max] =
-					graphics::local_bound_to_world(local_min, local_max, world_matrix);
+				const auto [_, joints, skin_offset] = skin_list[node.skin.value()];
 
-				drawdata_list.emplace_back(
-					Primitive_drawcall{
-						.world_position_min = world_min,
-						.world_position_max = world_max,
-						.material_index = primitive.material,
-						.world_transform = world_matrix,
-						.primitive = gen_data,
-					}
+				const auto node_positions =
+					joints
+					| std::views::transform([&node_world_matrices](uint32_t joint_index) {
+						  const auto& matrix = node_world_matrices[joint_index];
+						  const auto& col = matrix[3];
+						  return glm::vec3(col.x, col.y, col.z) / col.w;
+					  })
+					| std::ranges::to<std::vector>();
+
+				const auto world_min = std::ranges::fold_left(
+					node_positions,
+					glm::vec3(std::numeric_limits<float>::max()),
+					[](const glm::vec3& a, const glm::vec3& b) { return glm::min(a, b); }
 				);
+
+				const auto world_max = std::ranges::fold_left(
+					node_positions,
+					glm::vec3(std::numeric_limits<float>::lowest()),
+					[](const glm::vec3& a, const glm::vec3& b) { return glm::max(a, b); }
+				);
+
+				for (const auto& primitive : mesh.primitives)
+				{
+					const auto [gen_data, local_min, local_max] = primitive.gen_drawdata();
+					const float sphere_diameter = glm::distance(local_min, local_max);
+
+					drawdata_list.emplace_back(
+						Primitive_drawcall{
+							.world_position_min = world_min - glm::vec3(sphere_diameter),
+							.world_position_max = world_max + glm::vec3(sphere_diameter),
+							.material_index = primitive.material,
+							.transform_or_joint_matrix_offset = skin_offset,
+							.primitive = gen_data,
+						}
+					);
+				}
+			}
+			else  // Not Rigged
+			{
+				const glm::mat4& world_matrix = node_world_matrices[node_index];
+
+				for (const auto& primitive : mesh.primitives)
+				{
+					const auto [gen_data, local_min, local_max] = primitive.gen_drawdata();
+					const auto [world_min, world_max] =
+						graphics::local_bound_to_world(local_min, local_max, world_matrix);
+
+					drawdata_list.emplace_back(
+						Primitive_drawcall{
+							.world_position_min = world_min,
+							.world_position_max = world_max,
+							.material_index = primitive.material,
+							.transform_or_joint_matrix_offset = world_matrix,
+							.primitive = gen_data,
+						}
+					);
+				}
 			}
 		}
 
-		return {.objects = std::move(drawdata_list), .material_cache = material_bind_cache->ref()};
+		return drawdata_list;
+	}
+
+	Drawdata Model::generate_drawdata(
+		const glm::mat4& model_transform,
+		std::span<const Animation_key> animation
+	) noexcept
+	{
+		const auto node_overrides = compute_node_overrides(animation);
+		const auto node_world_matrices = compute_node_world_matrices(model_transform, node_overrides);
+		auto drawdata_list = compute_drawcalls(node_world_matrices);
+		auto joint_matrices = skin_list.compute_joint_matrices(node_world_matrices);
+
+		return {
+			.drawcalls = std::move(drawdata_list),
+			.deferred_skin_resource = joint_matrices.empty()
+				? nullptr
+				: std::make_shared<Deferred_skinning_resource>(std::move(joint_matrices)),
+			.material_cache = material_bind_cache->ref()
+		};
 	}
 
 	std::expected<tinygltf::Model, util::Error> load_tinygltf_model(

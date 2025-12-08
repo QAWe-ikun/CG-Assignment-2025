@@ -11,4 +11,9 @@ namespace gltf::detail::mesh
 		const tinygltf::Model& model,
 		const tinygltf::Primitive& primitive
 	) noexcept;
+
+	std::expected<std::vector<Rigged_vertex>, util::Error> get_rigged_primitive_list(
+		const tinygltf::Model& model,
+		const tinygltf::Primitive& primitive
+	) noexcept;
 }

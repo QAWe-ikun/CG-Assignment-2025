@@ -5,7 +5,6 @@
 #include "util/error.hpp"
 #include <glm/glm.hpp>
 #include <memory>
-#include <queue>
 
 namespace graphics
 {
@@ -26,7 +25,11 @@ namespace graphics
 		Auto_texture(Auto_texture&&) = default;
 		Auto_texture& operator=(Auto_texture&&) = default;
 
-		Auto_texture(gpu::Texture::Format format) noexcept;
+		Auto_texture(gpu::Texture::Format format, std::string name) noexcept :
+			format(format),
+			name(std::move(name))
+		{}
+
 		~Auto_texture() = default;
 
 		///
@@ -54,8 +57,10 @@ namespace graphics
 
 	  private:
 
-		glm::u32vec2 size = {0, 0};
 		gpu::Texture::Format format;
+		std::string name;
+
+		glm::u32vec2 size = {0, 0};
 		std::unique_ptr<gpu::Texture> texture;
 	};
 
@@ -78,7 +83,11 @@ namespace graphics
 		/// @param format Format of the texture
 		/// @param extra_pool_size Extra pool size, besides current and previous frame textures
 		///
-		Cycle_texture(gpu::Texture::Format format, size_t extra_pool_size = 1) noexcept;
+		Cycle_texture(gpu::Texture::Format format, std::string name, size_t extra_pool_size = 1) noexcept :
+			format(format),
+			name(std::move(name)),
+			extra_pool_size(std::max(1zu, extra_pool_size))
+		{}
 
 		///
 		/// @brief Resize the texture, and advance to the next texture in the cycle
@@ -114,8 +123,10 @@ namespace graphics
 
 	  private:
 
-		glm::u32vec2 size = {0, 0};
 		gpu::Texture::Format format;
+		std::string name;
+
+		glm::u32vec2 size = {0, 0};
 		size_t extra_pool_size = 1;
 
 		std::vector<gpu::Texture> texture_pool;

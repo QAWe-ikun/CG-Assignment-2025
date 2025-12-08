@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "resource-box.hpp"
+#include "util/error.hpp"
 
 namespace gpu
 {

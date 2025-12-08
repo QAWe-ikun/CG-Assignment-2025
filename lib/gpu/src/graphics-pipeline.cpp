@@ -3,7 +3,7 @@
 
 namespace gpu
 {
-	std::expected<Graphic_shader, util::Error> Graphic_shader::create(
+	std::expected<Graphics_shader, util::Error> Graphics_shader::create(
 		SDL_GPUDevice* device,
 		std::span<const std::byte> shader_data,
 		Stage stage,
@@ -33,7 +33,7 @@ namespace gpu
 		SDL_GPUShader* const shader = SDL_CreateGPUShader(device, &info);
 		if (shader == nullptr) RETURN_SDL_ERROR;
 
-		return Graphic_shader(device, shader);
+		return Graphics_shader(device, shader);
 	}
 
 	SDL_GPUDepthStencilState Graphics_pipeline::Depth_stencil_state::to_sdl(
@@ -57,8 +57,8 @@ namespace gpu
 
 	std::expected<Graphics_pipeline, util::Error> Graphics_pipeline::create(
 		SDL_GPUDevice* device,
-		const Graphic_shader& vertex_shader,
-		const Graphic_shader& fragment_shader,
+		const Graphics_shader& vertex_shader,
+		const Graphics_shader& fragment_shader,
 		SDL_GPUPrimitiveType primitive_type,
 		SDL_GPUSampleCount multisample_count,
 		const SDL_GPURasterizerState& rasterizer_state,

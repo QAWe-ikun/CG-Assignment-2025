@@ -1,6 +1,5 @@
 #pragma once
 
-#include "util/error.hpp"
 #include <SDL3/SDL_gpu.h>
 #include <cassert>
 #include <utility>
@@ -40,8 +39,8 @@ namespace gpu
 		{
 			if (&other != this)
 			{
-				this->~Resource_box();
-				new (this) Resource_box(std::move(other));
+				device = std::exchange(other.device, nullptr);
+				resource = std::exchange(other.resource, nullptr);
 			}
 
 			return *this;

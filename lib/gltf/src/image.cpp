@@ -4,134 +4,20 @@
 #include "image/algo/mipmap.hpp"
 #include "image/compress.hpp"
 
+#include "gltf/detail/image/check.hpp"
+#include "gltf/detail/image/extract.hpp"
+
 namespace gltf
 {
-	template <typename T>
-	static std::span<const T> as_span(const tinygltf::Image& image) noexcept
+	using namespace detail::image;
+
+	static auto create_texture_from_mipmap_fn(
+		SDL_GPUDevice* device,
+		SDL_GPUTextureFormat format,
+		const std::string& name
+	) noexcept
 	{
-		return std::span<const T>(reinterpret_cast<const T*>(image.image.data()), image.width * image.height);
-	}
-
-	static std::expected<image::Image<image::Precision::U8, image::Format::RGBA>, util::Error>
-	extract_u8_rgba(const tinygltf::Image& image) noexcept
-	{
-		const bool is_8bit = image.bits == 8 && image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
-		const bool is_16bit = image.bits == 16 && image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT;
-
-		image::Image<image::Precision::U8, image::Format::RGBA> img{
-			.size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height)),
-			.pixels = std::vector<image::Pixel_t<image::Precision::U8, image::Format::RGBA>>(
-				image.width * image.height
-			)
-		};
-
-		if (image.component == 4)
-		{
-			if (is_8bit)
-				std::ranges::copy(as_span<glm::u8vec4>(image), img.pixels.begin());
-			else if (is_16bit)
-				std::ranges::copy(
-					as_span<glm::u16vec4>(image) | std::views::transform([](const glm::u16vec4& rgba) {
-						return glm::u8vec4(rgba / uint16_t(256));
-					}),
-					img.pixels.begin()
-				);
-			else
-				return util::Error(
-					std::format(
-						"Mismatched image bit depth ({}) or pixel type ({})",
-						image.bits,
-						image.pixel_type
-					)
-				);
-		}
-		else if (image.component == 3)
-		{
-			if (is_8bit)
-				std::ranges::copy(
-					as_span<glm::u8vec3>(image) | std::views::transform([](const glm::u8vec3& rgb) {
-						return glm::u8vec4(rgb, 255);
-					}),
-					img.pixels.begin()
-				);
-			else if (is_16bit)
-				std::ranges::copy(
-					as_span<glm::u16vec3>(image) | std::views::transform([](const glm::u16vec3& rgb) {
-						return glm::u8vec4(rgb / uint16_t(256), 255);
-					}),
-					img.pixels.begin()
-				);
-			else
-				return util::Error(
-					std::format(
-						"Mismatched image bit depth ({}) or pixel type ({})",
-						image.bits,
-						image.pixel_type
-					)
-				);
-		}
-		else
-			return util::Error(
-				std::format("Unsupported number of components ({}) for color texture.", image.component)
-			);
-
-		return std::move(img);
-	}
-
-	static std::expected<image::Image<image::Precision::U16, image::Format::RGBA>, util::Error>
-	extract_u16_rgba(const tinygltf::Image& image) noexcept
-	{
-		if (image.bits != 16 || image.pixel_type != TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-			return util::Error(
-				std::format(
-					"Mismatched image bit depth ({}) or pixel type ({})",
-					image.bits,
-					image.pixel_type
-				)
-			);
-
-		image::Image<image::Precision::U16, image::Format::RGBA> img{
-			.size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height)),
-			.pixels = std::vector<image::Pixel_t<image::Precision::U16, image::Format::RGBA>>(
-				image.width * image.height
-			)
-		};
-
-		if (image.component == 4)
-			std::ranges::copy(as_span<glm::u16vec4>(image), img.pixels.begin());
-		else if (image.component == 3)
-			std::ranges::copy(
-				as_span<glm::u16vec3>(image) | std::views::transform([](const glm::u16vec3& rgb) {
-					return glm::u8vec4(rgb, 255);
-				}),
-				img.pixels.begin()
-			);
-		else
-			return util::Error(
-				std::format("Unsupported number of components ({}) for color texture.", image.component)
-			);
-
-		return std::move(img);
-	}
-
-	static bool dim_power_of_2(uint32_t value) noexcept
-	{
-		return (value != 0) && ((value & (value - 1)) == 0);
-	}
-
-	static bool image_power_of_2(glm::u32vec2 size) noexcept
-	{
-		return dim_power_of_2(size.x) && dim_power_of_2(size.y);
-	}
-
-	static bool image_size_multiple_of_block(glm::u32vec2 size) noexcept
-	{
-		return (size.x % 4 == 0) && (size.y % 4 == 0);
-	}
-
-	static auto create_texture_from_mipmap_fn(SDL_GPUDevice* device, SDL_GPUTextureFormat format) noexcept
-	{
-		return [device, format](const auto& img) -> std::expected<gpu::Texture, util::Error> {
+		return [device, format, name](const auto& mipmap) -> std::expected<gpu::Texture, util::Error> {
 			return graphics::create_texture_from_mipmap(
 				device,
 				gpu::Texture::Format{
@@ -139,16 +25,21 @@ namespace gltf
 					.format = format,
 					.usage = {.sampler = true}
 				},
-				img
+				mipmap,
+				name
 			);
 		};
 	}
 
 	template <typename T>
 	static std::function<std::expected<gpu::Texture, util::Error>(const image::Image_container<T>&)>
-	create_texture_from_image_fn(SDL_GPUDevice* device, SDL_GPUTextureFormat format) noexcept
+	create_texture_from_image_fn(
+		SDL_GPUDevice* device,
+		SDL_GPUTextureFormat format,
+		const std::string& name
+	) noexcept
 	{
-		return [device, format](const image::Image_container<T>& img) {
+		return [device, format, name](const image::Image_container<T>& image) {
 			return graphics::create_texture_from_image(
 				device,
 				gpu::Texture::Format{
@@ -156,7 +47,8 @@ namespace gltf
 					.format = format,
 					.usage = {.sampler = true}
 				},
-				img
+				image,
+				name
 			);
 		};
 	}
@@ -164,7 +56,8 @@ namespace gltf
 	static std::expected<gpu::Texture, util::Error> create_color_uncompressed(
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image,
-		bool srgb
+		bool srgb,
+		const std::string& name
 	) noexcept
 	{
 		return extract_u8_rgba(image)
@@ -173,7 +66,8 @@ namespace gltf
 			})
 			.and_then(create_texture_from_mipmap_fn(
 				device,
-				srgb ? SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB : SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM
+				srgb ? SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB : SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+				name
 			))
 			.transform_error(util::Error::forward_fn());
 	}
@@ -181,7 +75,8 @@ namespace gltf
 	static std::expected<gpu::Texture, util::Error> create_color_bc3(
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image,
-		bool srgb
+		bool srgb,
+		const std::string& name
 	) noexcept
 	{
 		const auto image_size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height));
@@ -190,14 +85,15 @@ namespace gltf
 
 		if (!image_size_multiple_of_block(image_size))
 		{
-			return create_color_uncompressed(device, image, srgb).transform_error(util::Error::forward_fn());
+			return create_color_uncompressed(device, image, srgb, name)
+				.transform_error(util::Error::forward_fn());
 		}
 
 		if (!image_power_of_2(image_size))
 		{
 			return extract_u8_rgba(image)
 				.and_then(image::compress_to_bc3)
-				.and_then(create_texture_from_image_fn<image::BC_block_8bpp>(device, format))
+				.and_then(create_texture_from_image_fn<image::BC_block_8bpp>(device, format, name))
 				.transform_error(util::Error::forward_fn());
 		}
 
@@ -206,14 +102,15 @@ namespace gltf
 				return image::generate_mipmap(uncompressed_image, {4, 4});
 			})
 			.and_then(image::Compress_mipmap(image::compress_to_bc3))
-			.and_then(create_texture_from_mipmap_fn(device, format))
+			.and_then(create_texture_from_mipmap_fn(device, format, name))
 			.transform_error(util::Error::forward_fn());
 	}
 
 	static std::expected<gpu::Texture, util::Error> create_color_bc7(
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image,
-		bool srgb
+		bool srgb,
+		const std::string& name
 	) noexcept
 	{
 		const auto image_size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height));
@@ -222,14 +119,15 @@ namespace gltf
 
 		if (!image_size_multiple_of_block(image_size))  // No compress, no mipmaps
 		{
-			return create_color_uncompressed(device, image, srgb).transform_error(util::Error::forward_fn());
+			return create_color_uncompressed(device, image, srgb, name)
+				.transform_error(util::Error::forward_fn());
 		}
 
 		if (!image_power_of_2(image_size))
 		{
 			return extract_u8_rgba(image)
 				.and_then(image::compress_to_bc7)
-				.and_then(create_texture_from_image_fn<image::BC_block_8bpp>(device, format))
+				.and_then(create_texture_from_image_fn<image::BC_block_8bpp>(device, format, name))
 				.transform_error(util::Error::forward_fn());
 		}
 
@@ -238,14 +136,15 @@ namespace gltf
 				return image::generate_mipmap(uncompressed_image, {4, 4});
 			})
 			.and_then(image::Compress_mipmap(image::compress_to_bc7))
-			.and_then(create_texture_from_mipmap_fn(device, format))
+			.and_then(create_texture_from_mipmap_fn(device, format, name))
 			.transform_error(util::Error::forward_fn());
 	}
 
 	static std::expected<gpu::Texture, util::Error> create_normal_8bit(
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image,
-		bool compress
+		bool compress,
+		const std::string& name
 	) noexcept
 	{
 		const auto image_size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height));
@@ -258,7 +157,9 @@ namespace gltf
 						return {pixel.r, pixel.g};
 					});
 				})
-				.and_then(create_texture_from_image_fn<glm::u8vec2>(device, SDL_GPU_TEXTUREFORMAT_R8G8_UNORM))
+				.and_then(
+					create_texture_from_image_fn<glm::u8vec2>(device, SDL_GPU_TEXTUREFORMAT_R8G8_UNORM, name)
+				)
 				.transform_error(util::Error::forward_fn());
 		}
 
@@ -272,7 +173,8 @@ namespace gltf
 					.and_then(
 						create_texture_from_image_fn<image::BC_block_8bpp>(
 							device,
-							SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM
+							SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM,
+							name
 						)
 					)
 					.transform_error(util::Error::forward_fn());
@@ -286,7 +188,11 @@ namespace gltf
 						});
 					})
 					.and_then(
-						create_texture_from_image_fn<glm::u8vec2>(device, SDL_GPU_TEXTUREFORMAT_R8G8_UNORM)
+						create_texture_from_image_fn<glm::u8vec2>(
+							device,
+							SDL_GPU_TEXTUREFORMAT_R8G8_UNORM,
+							name
+						)
 					)
 					.transform_error(util::Error::forward_fn());
 			}
@@ -298,7 +204,7 @@ namespace gltf
 			return extract_u8_rgba(image)
 				.transform([](const auto& img) { return image::generate_mipmap(img, {4, 4}); })
 				.and_then(image::Compress_mipmap(image::compress_to_bc5))
-				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM))
+				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM, name))
 				.transform_error(util::Error::forward_fn());
 		}
 		else
@@ -310,7 +216,7 @@ namespace gltf
 					});
 				})
 				.transform([](const auto& img) { return image::generate_mipmap(img); })
-				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_R8G8_UNORM))
+				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_R8G8_UNORM, name))
 				.transform_error(util::Error::forward_fn());
 		}
 	}
@@ -318,7 +224,8 @@ namespace gltf
 	static std::expected<gpu::Texture, util::Error> create_normal_16bit(
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image,
-		bool compress
+		bool compress,
+		const std::string& name
 	) noexcept
 	{
 		const auto image_size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height));
@@ -332,7 +239,11 @@ namespace gltf
 					});
 				})
 				.and_then(
-					create_texture_from_image_fn<glm::u16vec2>(device, SDL_GPU_TEXTUREFORMAT_R16G16_UNORM)
+					create_texture_from_image_fn<glm::u16vec2>(
+						device,
+						SDL_GPU_TEXTUREFORMAT_R16G16_UNORM,
+						name
+					)
 				)
 				.transform_error(util::Error::forward_fn());
 		}
@@ -352,7 +263,8 @@ namespace gltf
 					.and_then(
 						create_texture_from_image_fn<image::BC_block_8bpp>(
 							device,
-							SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM
+							SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM,
+							name
 						)
 					)
 					.transform_error(util::Error::forward_fn());
@@ -366,7 +278,11 @@ namespace gltf
 						});
 					})
 					.and_then(
-						create_texture_from_image_fn<glm::u16vec2>(device, SDL_GPU_TEXTUREFORMAT_R16G16_UNORM)
+						create_texture_from_image_fn<glm::u16vec2>(
+							device,
+							SDL_GPU_TEXTUREFORMAT_R16G16_UNORM,
+							name
+						)
 					)
 					.transform_error(util::Error::forward_fn());
 			}
@@ -383,7 +299,7 @@ namespace gltf
 				})
 				.transform([&](const auto& img) { return image::generate_mipmap(img, {4, 4}); })
 				.and_then(image::Compress_mipmap(image::compress_to_bc5))
-				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM))
+				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM, name))
 				.transform_error(util::Error::forward_fn());
 		}
 		else
@@ -394,7 +310,7 @@ namespace gltf
 						return {pixel.r, pixel.g};
 					}));
 				})
-				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_R16G16_UNORM))
+				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_R16G16_UNORM, name))
 				.transform_error(util::Error::forward_fn());
 		}
 	}
@@ -403,17 +319,18 @@ namespace gltf
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image,
 		Color_compress_mode compress_mode,
-		bool srgb
+		bool srgb,
+		const std::string& name
 	) noexcept
 	{
 		switch (compress_mode)
 		{
 		case Color_compress_mode::RGBA8_raw:
-			return create_color_uncompressed(device, image, srgb);
+			return create_color_uncompressed(device, image, srgb, name);
 		case Color_compress_mode::RGBA8_BC3:
-			return create_color_bc3(device, image, srgb);
+			return create_color_bc3(device, image, srgb, name);
 		case Color_compress_mode::RGBA8_BC7:
-			return create_color_bc7(device, image, srgb);
+			return create_color_bc7(device, image, srgb, name);
 		}
 
 		std::unreachable();
@@ -422,7 +339,8 @@ namespace gltf
 	std::expected<gpu::Texture, util::Error> create_normal_texture_from_image(
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image,
-		Normal_compress_mode compress_mode
+		Normal_compress_mode compress_mode,
+		const std::string& name
 	) noexcept
 	{
 		const bool compress_when_8bit =
@@ -431,9 +349,9 @@ namespace gltf
 		const bool compress_when_16bit = (compress_mode == Normal_compress_mode::RGn_BC5);
 
 		if (image.bits == 8 && image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
-			return create_normal_8bit(device, image, compress_when_8bit);
+			return create_normal_8bit(device, image, compress_when_8bit, name);
 		else if (image.bits == 16 && image.pixel_type == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-			return create_normal_16bit(device, image, compress_when_16bit);
+			return create_normal_16bit(device, image, compress_when_16bit, name);
 		else
 			return util::Error(
 				std::format(
@@ -446,7 +364,8 @@ namespace gltf
 
 	std::expected<gpu::Texture, util::Error> create_placeholder_image(
 		SDL_GPUDevice* device,
-		glm::vec4 color
+		glm::vec4 color,
+		const std::string& name
 	) noexcept
 	{
 		image::Image<image::Precision::U8, image::Format::RGBA> img{
@@ -466,7 +385,8 @@ namespace gltf
 				   {.type = SDL_GPU_TEXTURETYPE_2D,
 					.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
 					.usage = {.sampler = true}},
-				   img
+				   img,
+				   name
 		)
 			.transform_error(util::Error::forward_fn("Create texture from image failed"));
 	}
