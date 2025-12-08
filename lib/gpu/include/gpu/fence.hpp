@@ -1,0 +1,56 @@
+#pragma once
+
+#include <SDL3/SDL_gpu.h>
+#include <expected>
+
+#include "resource-box.hpp"
+
+namespace gpu
+{
+	///
+	/// @brief GPU Synchronization Fence
+	///
+	///
+	class Fence : public Resource_box<SDL_GPUFence>
+	{
+	  public:
+
+		///
+		/// @brief Query if the fence is signaled
+		///
+		/// @return `true` if signaled, `false` otherwise
+		///
+		bool is_signaled() const noexcept;
+
+		///
+		/// @brief Wait for the fence to be signaled
+		///
+		std::expected<void, util::Error> wait() const noexcept;
+
+		///
+		/// @brief Wait for any fence in the given list to be signaled
+		///
+		/// @param fences List of fences
+		///
+		static std::expected<void, util::Error> wait_any(
+			SDL_GPUDevice* device,
+			std::span<SDL_GPUFence* const> fences
+		) noexcept;
+
+		///
+		/// @brief Wait for all fences in the given list to be signaled
+		///
+		/// @param fences List of fences
+		///
+		static std::expected<void, util::Error> wait_all(
+			SDL_GPUDevice* device,
+			std::span<SDL_GPUFence* const> fences
+		) noexcept;
+
+	  private:
+
+		friend class Command_buffer;
+
+		using Resource_box<SDL_GPUFence>::Resource_box;
+	};
+}

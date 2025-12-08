@@ -1,0 +1,78 @@
+#include "graphic/aa/fxaa.hpp"
+#include "asset/shader/fxaa.frag.hpp"
+
+namespace graphic::aa
+{
+	static constexpr SDL_GPUSamplerCreateInfo sampler_info = {
+		.min_filter = SDL_GPU_FILTER_LINEAR,
+		.mag_filter = SDL_GPU_FILTER_LINEAR,
+		.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
+		.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+		.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+		.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+		.mip_lod_bias = 0.0f,
+		.max_anisotropy = 1,
+		.compare_op = SDL_GPU_COMPAREOP_ALWAYS,
+		.min_lod = 0.0f,
+		.max_lod = 1.0f,
+		.enable_anisotropy = false,
+		.enable_compare = false,
+		.padding1 = 0,
+		.padding2 = 0,
+		.props = 0
+	};
+
+	FXAA::FXAA(Fullscreen_pass fxaa_pass, gpu::Sampler sampler) noexcept :
+		sampler(std::move(sampler)),
+		fxaa_pass(std::move(fxaa_pass))
+	{}
+
+	std::expected<FXAA, util::Error> FXAA::create(SDL_GPUDevice* device, SDL_GPUTextureFormat format) noexcept
+	{
+		const auto shader_to_pass = [device, format](gpu::Graphic_shader fragment_shader) {
+			return graphic::Fullscreen_pass::create(
+				device,
+				fragment_shader,
+				gpu::Texture::Format{
+					.type = SDL_GPU_TEXTURETYPE_2D,
+					.format = format,
+					.usage = {.color_target = true}
+				},
+				{.clear_before_render = false}
+			);
+		};
+
+		auto fullscreen_pass =
+			gpu::Graphic_shader::create(
+				device,
+				std::as_bytes(shader_asset::fxaa_frag),
+				gpu::Graphic_shader::Stage::Fragment,
+				1,
+				0,
+				0,
+				0
+			)
+				.and_then(shader_to_pass);
+		if (!fullscreen_pass) return fullscreen_pass.error().propagate("Create FXAA fullscreen pass failed");
+
+		auto sampler = gpu::Sampler::create(device, sampler_info);
+		if (!sampler) return sampler.error().propagate("Create FXAA sampler failed");
+
+		return FXAA(std::move(*fullscreen_pass), std::move(*sampler));
+	}
+
+	std::expected<void, util::Error> FXAA::run_antialiasing(
+		SDL_GPUDevice* device [[maybe_unused]],
+		const gpu::Command_buffer& command_buffer,
+		SDL_GPUTexture* source,
+		SDL_GPUTexture* target,
+		glm::u32vec2 size [[maybe_unused]]
+	) noexcept
+	{
+		const auto texture_binding = std::to_array<SDL_GPUTextureSamplerBinding>({
+			{.texture = source, .sampler = sampler}
+		});
+
+		return fxaa_pass.render(command_buffer, target, texture_binding, std::nullopt, std::nullopt);
+	}
+}
