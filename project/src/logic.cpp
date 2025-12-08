@@ -10,7 +10,7 @@ void Logic::light_control_ui() noexcept
 	ImGui::SliderAngle("方位角", &light_azimuth, -180.0, 180.0);
 	ImGui::SliderAngle("高度角", &light_pitch, -89.0, 89.0);
 	ImGui::ColorEdit3("颜色", &light_color.r);
-	ImGui::SliderFloat("强度", &light_intensity, 0.0f, 10.0f);
+	ImGui::SliderFloat("强度", &light_intensity, 0.1f, 50.0f, "%.1f", ImGuiSliderFlags_Logarithmic);
 	ImGui::SliderFloat("大气浑浊度", &turbidity, 2.0f, 5.0f);
 	ImGui::SliderFloat("天空亮度倍率", &sky_brightness_mult, 0.0f, 2.0f);
 
@@ -21,6 +21,11 @@ void Logic::light_control_ui() noexcept
 	ImGui::Separator();
 
 	ImGui::SliderFloat("CSM 线性混合", &csm_linear_blend, 0.0f, 1.0f);
+
+	ImGui::Separator();
+
+	ImGui::SliderFloat("Bloom 衰减", &bloom_attenuation, 0.0f, 5.0f);
+	ImGui::SliderFloat("Bloom 强度", &bloom_strength, 0.0f, 5.0f);
 }
 
 void Logic::antialias_control_ui() noexcept
@@ -91,6 +96,8 @@ Logic::Result Logic::logic(const gltf::Model& model) noexcept
 		.light_color = light_color * light_intensity,
 		.turbidity = turbidity,
 		.sky_brightness_mult = sky_brightness_mult,
+		.bloom_attenuation = bloom_attenuation,
+		.bloom_strength = bloom_strength,
 		.debug_mode = debug_mode,
 		.csm_linear_blend = csm_linear_blend,
 		.animation_keys = std::move(animation_keys)

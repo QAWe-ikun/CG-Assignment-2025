@@ -16,7 +16,7 @@ namespace target
 		);
 		if (!bin_buffer) return bin_buffer.error().forward("Create auto exposure bin buffer failed");
 
-		const auto clear_value = Result_buffer_struct{.avg_brightness = 1.0f};
+		const auto clear_value = Result_buffer_struct{.avg_brightness = 1.0f, .exposure_mult = 1.0f};
 
 		std::vector<gpu::Buffer> result_buffer;
 		for (auto idx : std::views::iota(0u, 3u))

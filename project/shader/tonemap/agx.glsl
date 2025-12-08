@@ -62,7 +62,7 @@ vec3 agx(vec3 /*Linear BT.709*/ ci) {
     ci = agx_mat * ci;
 
     // Apply sigmoid function
-    vec3 ct = saturate(log2(ci) * (1.0 / dynamic_range) - (min_ev / dynamic_range));
+    vec3 ct = saturate(fma(log2(ci), vec3(1.0 / dynamic_range), vec3(-min_ev / dynamic_range)));
     vec3 co = agx_curve3(ct);
 
     // Inverse input transform (outset)

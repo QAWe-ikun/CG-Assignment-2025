@@ -48,7 +48,8 @@ namespace graphics
 			device,
 			*fragment_shader,
 			dst_format,
-			{.clear_before_render = false, .blend_mode = Fullscreen_blend_mode::Overwrite}
+			{.clear_before_render = false, .blend_mode = Fullscreen_blend_mode::Overwrite},
+			std::format("Renderpass_copy Pipeline ({} channels)", channels)
 		);
 		if (!copy_pass) return copy_pass.error().forward("Create Fullscreen_pass for Renderpass_copy failed");
 
@@ -73,8 +74,12 @@ namespace graphics
 		SDL_GPUTexture* dst
 	) noexcept
 	{
+		command_buffer.push_debug_group("Copy texture via Renderpass_copy");
 		const SDL_GPUTextureSamplerBinding sampler_binding{.texture = src, .sampler = sampler};
-		return copy_pass
-			.render(command_buffer, dst, std::to_array({sampler_binding}), std::nullopt, std::nullopt);
+		auto result =
+			copy_pass
+				.render(command_buffer, dst, std::to_array({sampler_binding}), std::nullopt, std::nullopt);
+		command_buffer.pop_debug_group();
+		return result;
 	}
 }

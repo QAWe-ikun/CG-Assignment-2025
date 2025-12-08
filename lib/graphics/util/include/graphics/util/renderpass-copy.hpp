@@ -25,6 +25,14 @@ namespace graphics
 			gpu::Texture::Format dst_format
 		) noexcept;
 
+		///
+		/// @brief Copy texture data from src to dst
+		/// @note This function only copies to the first mipmap level
+		/// @param command_buffer Command buffer
+		/// @param src Source texture
+		/// @param dst Destination texture
+		/// @return Result
+		///
 		std::expected<void, util::Error> copy(
 			const gpu::Command_buffer& command_buffer,
 			SDL_GPUTexture* src,

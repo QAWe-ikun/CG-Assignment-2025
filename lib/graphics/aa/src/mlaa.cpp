@@ -49,7 +49,13 @@ namespace graphics::aa
 			0
 		);
 		auto pass1 = std::move(shader1).and_then([device](gpu::Graphics_shader shader) {
-			return Fullscreen_pass<true>::create(device, shader, edge_texture_format, {});
+			return Fullscreen_pass<true>::create(
+				device,
+				shader,
+				edge_texture_format,
+				{},
+				"MLAA Pass 1 Pipeline"
+			);
 		});
 
 		auto shader2 = gpu::Graphics_shader::create(
@@ -62,7 +68,13 @@ namespace graphics::aa
 			0
 		);
 		auto pass2 = std::move(shader2).and_then([device](gpu::Graphics_shader shader) {
-			return Fullscreen_pass<true>::create(device, shader, blend_texture_format, {});
+			return Fullscreen_pass<true>::create(
+				device,
+				shader,
+				blend_texture_format,
+				{},
+				"MLAA Pass 2 Pipeline"
+			);
 		});
 
 		auto shader3 = gpu::Graphics_shader::create(
@@ -79,7 +91,8 @@ namespace graphics::aa
 				device,
 				shader,
 				{.type = SDL_GPU_TEXTURETYPE_2D, .format = format, .usage = {.color_target = true}},
-				{.clear_before_render = false}
+				{.clear_before_render = false},
+				"MLAA Pass 3 Pipeline"
 			);
 		});
 

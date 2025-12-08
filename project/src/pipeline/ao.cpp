@@ -71,7 +71,7 @@ namespace pipeline
 		const target::AO& ao_target,
 		const target::Gbuffer& gbuffer,
 		const Params& params
-	) noexcept
+	) const noexcept
 	{
 		const auto depth_tex_binding = SDL_GPUTextureSamplerBinding{
 			.texture = gbuffer.depth_value_texture.current(),
@@ -97,9 +97,10 @@ namespace pipeline
 			{depth_tex_binding, light_info_binding, prev_depth_tex_binding, prev_ao_tex_binding};
 
 		const auto uniform_params = Uniform_params::from(params);
-
 		command_buffer.push_uniform_to_fragment(0, util::as_bytes(uniform_params));
 
+		command_buffer.push_debug_group("AO Pass");
 		fullscreen_pass.render_to_renderpass(render_pass, texture_bindings, {}, {});
+		command_buffer.pop_debug_group();
 	}
 }

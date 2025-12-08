@@ -26,13 +26,13 @@ namespace pipeline
 
 		static std::expected<Auto_exposure, util::Error> create(SDL_GPUDevice* device) noexcept;
 
-		std::expected<void, util::Error> render(
+		std::expected<void, util::Error> compute(
 			const gpu::Command_buffer& command_buffer,
 			const target::Auto_exposure& target,
 			const target::Light_buffer& light_buffer,
 			const Params& params,
 			glm::u32vec2 size
-		) noexcept;
+		) const noexcept;
 
 	  private:
 

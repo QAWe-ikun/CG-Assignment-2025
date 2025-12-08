@@ -120,7 +120,8 @@ namespace graphics
 			const gpu::Graphics_shader& fragment,
 			gpu::Texture::Format target_format,
 			Fullscreen_blend_mode blend_mode,
-			std::optional<Fullscreen_stencil_state> stencil_state
+			std::optional<Fullscreen_stencil_state> stencil_state,
+			const std::string& name
 		) noexcept
 		{
 			if (target_format.type != SDL_GPU_TEXTURETYPE_2D
@@ -155,7 +156,8 @@ namespace graphics
 				vertex_attributes,
 				vertex_buffer_descs,
 				color_target_descs,
-				stencil_state.transform([](const auto& state) { return state.to_depth_stencil_state(); })
+				stencil_state.transform([](const auto& state) { return state.to_depth_stencil_state(); }),
+				name
 			);
 			if (!create_pipeline_result)
 				return create_pipeline_result.error().forward("Create pipeline failed");
@@ -193,7 +195,7 @@ namespace graphics
 		std::optional<std::span<const SDL_GPUTextureSamplerBinding>> samplers,
 		std::optional<std::span<SDL_GPUTexture* const>> storage_textures,
 		std::optional<std::span<SDL_GPUBuffer* const>> storage_buffers
-	) noexcept
+	) const noexcept
 	{
 		render_pass.bind_pipeline(pipeline);
 
@@ -214,6 +216,7 @@ namespace graphics
 		SDL_GPUDevice* device,
 		const gpu::Graphics_shader& fragment,
 		gpu::Texture::Format target_format,
+		const std::string& name,
 		Fullscreen_blend_mode mode,
 		std::optional<Fullscreen_stencil_state> stencil_state
 	) noexcept
@@ -224,7 +227,7 @@ namespace graphics
 		auto vertex_buffer = std::move(create_vertex_buffer_result.value());
 
 		auto create_pipeline_result =
-			create_fullscreen_pass(device, fragment, target_format, mode, stencil_state);
+			create_fullscreen_pass(device, fragment, target_format, mode, stencil_state, name);
 		if (!create_pipeline_result) return create_pipeline_result.error().forward("Create pipeline failed");
 		auto pipeline = std::move(create_pipeline_result.value());
 
@@ -239,13 +242,15 @@ namespace graphics
 		SDL_GPUDevice* device,
 		const gpu::Graphics_shader& fragment,
 		gpu::Texture::Format target_format,
-		Config config
+		Config config,
+		const std::string& name
 	) noexcept
 	{
 		auto create_base_pass = Fullscreen_pass<false>::create(
 			device,
 			fragment,
 			target_format,
+			name,
 			config.blend_mode,
 			config.stencil_state
 		);
@@ -260,7 +265,7 @@ namespace graphics
 		std::optional<std::span<const SDL_GPUTextureSamplerBinding>> samplers,
 		std::optional<std::span<SDL_GPUTexture* const>> storage_textures,
 		std::optional<std::span<SDL_GPUBuffer* const>> storage_buffers
-	) noexcept
+	) const noexcept
 	{
 		const auto color_target_info = std::to_array<SDL_GPUColorTargetInfo>({
 			{.texture = target_texture,

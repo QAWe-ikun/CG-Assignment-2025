@@ -1,11 +1,35 @@
 #include "gltf/material.hpp"
 #include "gltf/image.hpp"
 
+#include <format>
 #include <ranges>
 #include <thread_pool/thread_pool.h>
 
 namespace gltf
 {
+	std::string Pipeline_mode::to_string() const noexcept
+	{
+		std::string alpha_mode_str;
+
+		switch (alpha_mode)
+		{
+		case Alpha_mode::Opaque:
+			alpha_mode_str = "Opaque";
+			break;
+		case Alpha_mode::Mask:
+			alpha_mode_str = "Mask";
+			break;
+		case Alpha_mode::Blend:
+			alpha_mode_str = "Blend";
+			break;
+		}
+
+		if (double_sided)
+			return std::format("Pipeline_mode(Alpha_mode: {}, Double Sided)", alpha_mode_str);
+		else
+			return std::format("Pipeline_mode(Alpha_mode: {}, Single Sided)", alpha_mode_str);
+	}
+
 	static std::expected<std::optional<uint32_t>, util::Error> get_texture_index(
 		const tinygltf::Model& model,
 		const auto& texture_info
@@ -267,7 +291,7 @@ namespace gltf
 			entry.normal_texture = std::move(*normal_texture);
 		}
 
-		return std::move(entry);
+		return entry;
 	}
 
 	std::expected<void, util::Error> Material_list::load_images(

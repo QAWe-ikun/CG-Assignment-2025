@@ -72,7 +72,7 @@ namespace gltf::detail::image
 				std::format("Unsupported number of components ({}) for color texture.", image.component)
 			);
 
-		return std::move(img);
+		return img;
 	}
 
 	std::expected<::image::Image<::image::Precision::U16, ::image::Format::RGBA>, util::Error>
@@ -108,6 +108,6 @@ namespace gltf::detail::image
 				std::format("Unsupported number of components ({}) for color texture.", image.component)
 			);
 
-		return std::move(img);
+		return img;
 	}
 }

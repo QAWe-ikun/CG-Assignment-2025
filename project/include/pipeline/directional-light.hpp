@@ -32,7 +32,7 @@ namespace pipeline
 			const target::Gbuffer& gbuffer,
 			const target::Shadow& shadow,
 			const Params& params
-		) noexcept;
+		) const noexcept;
 
 	  private:
 

@@ -28,7 +28,8 @@ namespace graphics::aa
 					.format = format,
 					.usage = {.color_target = true}
 				},
-				{.clear_before_render = false}
+				{.clear_before_render = false},
+				"FXAA Pipeline"
 			);
 		};
 

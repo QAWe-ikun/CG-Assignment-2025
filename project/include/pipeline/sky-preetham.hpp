@@ -31,7 +31,7 @@ namespace pipeline
 			const gpu::Command_buffer& command_buffer,
 			const gpu::Render_pass& render_pass,
 			const Params& params
-		) noexcept;
+		) const noexcept;
 
 	  private:
 

@@ -25,9 +25,10 @@ namespace graphics
 		Auto_texture(Auto_texture&&) = default;
 		Auto_texture& operator=(Auto_texture&&) = default;
 
-		Auto_texture(gpu::Texture::Format format, std::string name) noexcept :
+		Auto_texture(gpu::Texture::Format format, std::string name, uint32_t mip_levels = 1) noexcept :
 			format(format),
-			name(std::move(name))
+			name(std::move(name)),
+			mip_levels(mip_levels)
 		{}
 
 		~Auto_texture() = default;
@@ -61,6 +62,7 @@ namespace graphics
 		std::string name;
 
 		glm::u32vec2 size = {0, 0};
+		uint32_t mip_levels = 1;
 		std::unique_ptr<gpu::Texture> texture;
 	};
 
@@ -83,10 +85,16 @@ namespace graphics
 		/// @param format Format of the texture
 		/// @param extra_pool_size Extra pool size, besides current and previous frame textures
 		///
-		Cycle_texture(gpu::Texture::Format format, std::string name, size_t extra_pool_size = 1) noexcept :
+		Cycle_texture(
+			gpu::Texture::Format format,
+			std::string name,
+			uint32_t mip_levels = 1,
+			size_t extra_pool_size = 1
+		) noexcept :
 			format(format),
 			name(std::move(name)),
-			extra_pool_size(std::max(1zu, extra_pool_size))
+			extra_pool_size(std::max(1zu, extra_pool_size)),
+			mip_levels(mip_levels)
 		{}
 
 		///
@@ -128,6 +136,7 @@ namespace graphics
 
 		glm::u32vec2 size = {0, 0};
 		size_t extra_pool_size = 1;
+		uint32_t mip_levels = 1;
 
 		std::vector<gpu::Texture> texture_pool;
 	};

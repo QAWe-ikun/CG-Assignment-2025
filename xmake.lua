@@ -1,22 +1,25 @@
+-- Rules and Policies
 add_rules("mode.debug", "mode.release", "mode.releasedbg", "mode.asan")
 set_policy("build.warning", true)
 set_policy("build.intermediate_directory", false)
 set_policy("run.autobuild", true)
 
+-- Compilation Settings
 set_encodings("utf-8")
-set_warnings("all", "pedantic")
+set_warnings("all", "pedantic", "extra")
 set_languages("c++23")
-
 add_vectorexts("sse", "sse2", "avx", "avx2")
 
+-- Additional Links
 if is_plat("linux") then
 	add_syslinks("atomic")
 end
 
-includes("xmake/rule", "xmake/task/*.lua")
+-- Additional Defs
 add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_ENABLE_EXPERIMENTAL", "GLM_FORCE_INTRINSICS")
 add_defines("TINYGLTF_NOEXCEPTION")
 
+-- Packages
 add_requires(
 	"libsdl3 main",
 	"glm 1.0.2",
@@ -35,4 +38,6 @@ add_requires(
 add_requireconfs("imgui.libsdl3", {override=true, version="main"})
 add_requireconfs("boost", {configs={cmake=false}})
 
+-- Rules, Tasks and subprojects
+includes("xmake/rule", "xmake/task/*.lua")
 includes("project", "lib")

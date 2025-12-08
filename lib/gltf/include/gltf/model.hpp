@@ -192,4 +192,14 @@ namespace gltf
 	std::expected<tinygltf::Model, util::Error> load_tinygltf_model(
 		const std::vector<std::byte>& model_data
 	) noexcept;
+
+	///
+	/// @brief Load tinygltf model from file
+	///
+	/// @param filepath Path to glTF file
+	/// @return tinygltf Model on success, or Error on failure
+	///
+	std::expected<tinygltf::Model, util::Error> load_tinygltf_model_from_file(
+		const std::string& filepath
+	) noexcept;
 }

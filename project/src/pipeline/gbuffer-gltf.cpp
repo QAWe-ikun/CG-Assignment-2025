@@ -282,7 +282,8 @@ namespace pipeline
 				   : std::span<const SDL_GPUVertexAttribute>(vertex_attributes),
 			rigged ? vertex_buffer_rigged_descs : vertex_buffer_descs,
 			color_target_descs,
-			get_depth_stencil_state(mode.double_sided)
+			get_depth_stencil_state(mode.double_sided),
+			std::format("Gbuffer Gltf Pipeline (mode: {}, rigged: {})", mode.to_string(), rigged)
 		);
 	}
 

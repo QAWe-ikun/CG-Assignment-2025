@@ -30,7 +30,7 @@ namespace util
 			file.seekg(0, std::ios::beg);
 			file.read(reinterpret_cast<char*>(data.data()), file_size);
 
-			return std::move(data);
+			return data;
 		}
 		catch (const std::exception& e)
 		{

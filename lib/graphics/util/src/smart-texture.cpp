@@ -20,7 +20,8 @@ namespace graphics
 		if (!format.supported_on(device)) return util::Error("Texture format not supported on device");
 
 		size = new_size;
-		auto create_texture_result = gpu::Texture::create(device, format.create(size.x, size.y, 1, 1), name);
+		auto create_texture_result =
+			gpu::Texture::create(device, format.create(size.x, size.y, 1, mip_levels), name);
 		if (!create_texture_result) return create_texture_result.error().forward("Resize failed");
 
 		texture = std::make_unique<gpu::Texture>(std::move(create_texture_result.value()));
@@ -57,7 +58,7 @@ namespace graphics
 		{
 			auto create_texture_result = gpu::Texture::create(
 				device,
-				format.create(size.x, size.y, 1, 1),
+				format.create(size.x, size.y, 1, mip_levels),
 				std::format("{} [Index {}]", name, idx)
 			);
 			if (!create_texture_result)

@@ -58,19 +58,30 @@ namespace renderer
 			const auto& pipeline_mode = drawdata.material_cache[drawcall.material_index].params.pipeline;
 			auto& target = drawcalls[std::pair(pipeline_mode, drawcall.is_rigged())];
 
-			min_z = std::ranges::fold_left(
+			const auto [local_min_z, local_max_z] = std::ranges::minmax(
 				graphics::get_corner_points(drawcall.world_position_min, drawcall.world_position_max)
 					| std::views::filter(point_in_range)
 					| std::views::transform(clip_to_world),
-				min_z,
-				[](float min, glm::vec3 p) { return std::min(min, p.z); }
+				{},
+				&glm::vec3::z
 			);
+			min_z = std::min(local_min_z.z, min_z);
 
 			if (target.empty()) target.reserve(1024);
 			target.emplace_back(
-				Drawcall{.drawcall = drawcall, .resource_set_index = current_resource_set_idx}
+				Drawcall{
+					.drawcall = drawcall,
+					.resource_set_index = current_resource_set_idx,
+					.max_z = local_max_z.z
+				}
 			);
 		}
+	}
+
+	void Gbuffer_gltf::Drawdata::sort() noexcept
+	{
+		for (auto& drawcalls_vec : drawcalls | std::views::values)
+			std::ranges::sort(drawcalls_vec, std::greater{}, &Drawcall::max_z);
 	}
 
 	float Gbuffer_gltf::Drawdata::get_min_z() const noexcept
@@ -93,6 +104,7 @@ namespace renderer
 		const Drawdata& drawdata
 	) const noexcept
 	{
+		command_buffer.push_debug_group("Gbuffer Pass");
 		for (const auto& [pipeline_cfg, drawcalls] : drawdata.drawcalls)
 		{
 			const auto [pipeline_mode, rigged] = pipeline_cfg;
@@ -100,7 +112,7 @@ namespace renderer
 
 			draw_pipeline.bind(command_buffer, gbuffer_pass, drawdata.camera_matrix);
 
-			for (const auto& [drawcall, set_idx] : drawcalls)
+			for (const auto& [drawcall, set_idx, _] : drawcalls)
 			{
 				const auto& resource_set = drawdata.resource_sets[set_idx];
 
@@ -114,5 +126,6 @@ namespace renderer
 				draw_pipeline.draw(command_buffer, gbuffer_pass, drawcall);
 			}
 		}
+		command_buffer.pop_debug_group();
 	}
 }

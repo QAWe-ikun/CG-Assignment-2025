@@ -21,7 +21,7 @@ namespace pipeline
 			const gpu::Render_pass& render_pass,
 			SDL_GPUTexture* input_texture,
 			glm::u32vec2 size
-		) noexcept;
+		) const noexcept;
 
 	  private:
 

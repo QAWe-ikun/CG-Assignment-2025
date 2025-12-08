@@ -25,6 +25,7 @@ namespace renderer
 			{
 				gltf::Primitive_drawcall drawcall;
 				size_t resource_set_index;
+				float min_z;
 			};
 
 			struct Resource
@@ -47,6 +48,8 @@ namespace renderer
 				void append(const gltf::Drawdata& drawdata) noexcept;
 
 				glm::mat4 get_vp_matrix() const noexcept;
+
+				void sort() noexcept;
 			};
 
 			std::array<CSM_level_data, 3> csm_levels;
@@ -84,6 +87,12 @@ namespace renderer
 			/// @return View-projection matrix
 			///
 			glm::mat4 get_vp_matrix(size_t level) const noexcept;
+
+			///
+			/// @brief Sort drawcalls for optimal rendering
+			///
+			///
+			void sort() noexcept;
 		};
 
 		///

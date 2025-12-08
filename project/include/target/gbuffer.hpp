@@ -61,13 +61,16 @@ namespace target
 			.usage = {.sampler = true, .color_target = true}
 		};
 
+		static constexpr uint32_t hiz_mip_levels = 9;
+
 		/* Textures */
 
 		graphics::Auto_texture depth_texture{depth_format, "Gbuffer Depth Texture"};  // Depth Texture
 
 		graphics::Cycle_texture depth_value_texture{
 			depth_value_format,
-			"Gbuffer Cycled Depth Texture"
+			"Gbuffer Cycled Depth Texture",
+			hiz_mip_levels
 		};  // Depth Value Texture
 
 		graphics::Auto_texture albedo_texture{albedo_format, "Gbuffer Albedo Texture"};  // Albedo Texture

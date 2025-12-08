@@ -4,6 +4,7 @@
 #include "gpu/sampler.hpp"
 #include "graphics/util/fullscreen-pass.hpp"
 #include "target/auto-exposure.hpp"
+#include "target/bloom.hpp"
 #include "target/light.hpp"
 
 #include <glm/glm.hpp>
@@ -17,19 +18,8 @@ namespace pipeline
 		struct Param
 		{
 			float exposure = 1.0f;
+			float bloom_strength = 1.0f;
 		};
-
-	  private:
-
-		graphics::Fullscreen_pass<true> fullscreen_pass;
-		gpu::Sampler sampler;
-
-		Tonemapping(graphics::Fullscreen_pass<true> fullscreen_pass, gpu::Sampler sampler) :
-			fullscreen_pass(std::move(fullscreen_pass)),
-			sampler(std::move(sampler))
-		{}
-
-	  public:
 
 		static std::expected<Tonemapping, util::Error> create(
 			SDL_GPUDevice* device,
@@ -40,9 +30,28 @@ namespace pipeline
 			const gpu::Command_buffer& command_buffer,
 			const target::Light_buffer& light_buffer,
 			const target::Auto_exposure& auto_exposure,
+			const target::Bloom& bloom,
 			SDL_GPUTexture* target_texture,
 			const Param& param
-		) noexcept;
+		) const noexcept;
+
+	  private:
+
+		graphics::Fullscreen_pass<true> fullscreen_pass;
+		gpu::Sampler nearest_sampler;
+		gpu::Sampler linear_sampler;
+
+		Tonemapping(
+			graphics::Fullscreen_pass<true> fullscreen_pass,
+			gpu::Sampler nearest_sampler,
+			gpu::Sampler linear_sampler
+		) :
+			fullscreen_pass(std::move(fullscreen_pass)),
+			nearest_sampler(std::move(nearest_sampler)),
+			linear_sampler(std::move(linear_sampler))
+		{}
+
+	  public:
 
 		Tonemapping(const Tonemapping&) = delete;
 		Tonemapping(Tonemapping&&) = default;

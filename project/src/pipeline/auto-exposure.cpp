@@ -48,15 +48,21 @@ namespace pipeline
 			.threadcount_z = 1
 		};
 
-		auto clear_pipeline_result = gpu::Compute_pipeline::create(device, clear_pipeline_info);
+		auto clear_pipeline_result =
+			gpu::Compute_pipeline::create(device, clear_pipeline_info, "Auto-exposure Clear Pipeline");
 		if (!clear_pipeline_result)
 			return clear_pipeline_result.error().forward("Create clear pipeline failed");
 
-		auto histogram_pipeline_result = gpu::Compute_pipeline::create(device, histogram_pipeline_info);
+		auto histogram_pipeline_result = gpu::Compute_pipeline::create(
+			device,
+			histogram_pipeline_info,
+			"Auto-exposure Histogram Pipeline"
+		);
 		if (!histogram_pipeline_result)
 			return histogram_pipeline_result.error().forward("Create histogram pipeline failed");
 
-		auto avg_pipeline_result = gpu::Compute_pipeline::create(device, avg_pipeline_info);
+		auto avg_pipeline_result =
+			gpu::Compute_pipeline::create(device, avg_pipeline_info, "Auto-exposure Average Pipeline");
 		if (!avg_pipeline_result)
 			return avg_pipeline_result.error().forward("Create average luminance pipeline failed");
 
@@ -98,13 +104,13 @@ namespace pipeline
 		);
 	}
 
-	std::expected<void, util::Error> Auto_exposure::render(
+	std::expected<void, util::Error> Auto_exposure::compute(
 		const gpu::Command_buffer& command_buffer,
 		const target::Auto_exposure& target,
 		const target::Light_buffer& light_buffer,
 		const Params& params,
 		glm::u32vec2 size
-	) noexcept
+	) const noexcept
 	{
 		const auto [bin_buffer, prev_result_buffer, result_buffer] = target.get_current_frame();
 
@@ -132,45 +138,63 @@ namespace pipeline
 			.padding3 = 0
 		};
 
-		const auto clear_pass_result = command_buffer.run_compute_pass(
-			{},
-			std::to_array({bin_buffer_binding}),
-			[this](const gpu::Compute_pass& compute_pass) {
-				compute_pass.bind_pipeline(clear_pipeline);
-				compute_pass.dispatch(1, 1, 1);
+		command_buffer.push_debug_group("Auto Exposure");
+		{
+			command_buffer.push_debug_group("Clear Histogram Bins");
+			{
+				const auto clear_pass_result = command_buffer.run_compute_pass(
+					{},
+					std::to_array({bin_buffer_binding}),
+					[this](const gpu::Compute_pass& compute_pass) {
+						compute_pass.bind_pipeline(clear_pipeline);
+						compute_pass.dispatch(1, 1, 1);
+					}
+				);
+				if (!clear_pass_result)
+					return clear_pass_result.error().forward("Auto exposure clear pass failed");
 			}
-		);
-		if (!clear_pass_result) return clear_pass_result.error().forward("Auto exposure clear pass failed");
+			command_buffer.pop_debug_group();
 
-		const auto histogram_params = Internal_param_histogram::from(params, size);
-		command_buffer.push_uniform_to_compute(0, util::as_bytes(histogram_params));
+			command_buffer.push_debug_group("Compute Histogram");
+			{
+				const auto histogram_params = Internal_param_histogram::from(params, size);
+				command_buffer.push_uniform_to_compute(0, util::as_bytes(histogram_params));
 
-		const auto histogram_pass_result = command_buffer.run_compute_pass(
-			{},
-			std::to_array({bin_buffer_binding_not_cycle}),
-			[this, &light_buffer, size](const gpu::Compute_pass& compute_pass) {
-				compute_pass.bind_pipeline(histogram_pipeline);
-				compute_pass.bind_samplers(0, mask_texture.bind_with_sampler(mask_sampler));
-				compute_pass.bind_storage_textures(0, light_buffer.light_texture.current());
-				compute_pass.dispatch((size.x + 15) / 16, (size.y + 15) / 16, 1);
+				const auto histogram_pass_result = command_buffer.run_compute_pass(
+					{},
+					std::to_array({bin_buffer_binding_not_cycle}),
+					[this, &light_buffer, size](const gpu::Compute_pass& compute_pass) {
+						compute_pass.bind_pipeline(histogram_pipeline);
+						compute_pass.bind_samplers(0, mask_texture.bind_with_sampler(mask_sampler));
+						compute_pass.bind_storage_textures(0, light_buffer.light_texture.current());
+						compute_pass.dispatch((size.x + 15) / 16, (size.y + 15) / 16, 1);
+					}
+				);
+				if (!histogram_pass_result)
+					return histogram_pass_result.error().forward("Auto exposure histogram pass failed");
 			}
-		);
-		if (!histogram_pass_result)
-			return histogram_pass_result.error().forward("Auto exposure histogram pass failed");
+			command_buffer.pop_debug_group();
 
-		const auto avg_params = Internal_param_avg::from(params);
-		command_buffer.push_uniform_to_compute(0, util::as_bytes(avg_params));
+			command_buffer.push_debug_group("Compute Average Luminance");
+			{
+				const auto avg_params = Internal_param_avg::from(params);
+				command_buffer.push_uniform_to_compute(0, util::as_bytes(avg_params));
 
-		const auto avg_pass_result = command_buffer.run_compute_pass(
-			{},
-			std::to_array({result_buffer_binding}),
-			[this, &bin_buffer, &prev_result_buffer](const gpu::Compute_pass& compute_pass) {
-				compute_pass.bind_pipeline(avg_pipeline);
-				compute_pass.bind_storage_buffers(0, bin_buffer, prev_result_buffer);
-				compute_pass.dispatch(1, 1, 1);
+				const auto avg_pass_result = command_buffer.run_compute_pass(
+					{},
+					std::to_array({result_buffer_binding}),
+					[this, &bin_buffer, &prev_result_buffer](const gpu::Compute_pass& compute_pass) {
+						compute_pass.bind_pipeline(avg_pipeline);
+						compute_pass.bind_storage_buffers(0, bin_buffer, prev_result_buffer);
+						compute_pass.dispatch(1, 1, 1);
+					}
+				);
+				if (!avg_pass_result)
+					return avg_pass_result.error().forward("Auto exposure average pass failed");
 			}
-		);
-		if (!avg_pass_result) return avg_pass_result.error().forward("Auto exposure average pass failed");
+			command_buffer.pop_debug_group();
+		}
+		command_buffer.pop_debug_group();
 
 		return {};
 	}

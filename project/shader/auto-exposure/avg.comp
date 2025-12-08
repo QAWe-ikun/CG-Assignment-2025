@@ -13,11 +13,13 @@ layout(std430, set = 0, binding = 0) readonly buffer Src
 layout(std430, set = 0, binding = 1) readonly buffer Prev
 {
     float previous_avg;
+    float previous_exposure_mult;
 };
 
 layout(std430, set = 1, binding = 0) buffer Dst
 {
     float current_avg;
+    float exposure_mult;
 };
 
 layout(std140, set = 2, binding = 0) uniform Params
@@ -28,11 +30,17 @@ layout(std140, set = 2, binding = 0) uniform Params
     float adaptation_rate;
 };
 
-const float fix_exponent = 2.2;
+#define LOG_AVERAGE 0
+#define LUM_AVERAGE 1
 
-void main()
+#define AVERAGE_MODE LUM_AVERAGE
+
+#if AVERAGE_MODE == LOG_AVERAGE
+
+float calc_avg_luminance()
 {
-    float bin_average = 0.0; // average bin index (0..255)
+    const float fix_exponent = 3.5;
+    float bin_average = 0.0;
 
     #pragma unroll 4
     for (uint i = 0; i < 256; ++i)
@@ -43,7 +51,32 @@ void main()
 
     float log_avg_luminance = log_min_histogram_value + bin_average * dynamic_range;
     float current_luminance = exp2(log_avg_luminance);
-    current_luminance = max(current_luminance, 1e-8);
+    return max(current_luminance, 1e-8);
+}
 
-    current_avg = mix(previous_avg, current_luminance, adaptation_rate);
+#elif AVERAGE_MODE == LUM_AVERAGE
+
+float calc_avg_luminance()
+{
+    float bin_average = 0.0;
+
+    for (uint i = 0; i < 256; ++i)
+    {
+        float bin_pos = float(i) / 255.0;
+        float weight = float(bins[i]);
+        float bin_log = log_min_histogram_value + bin_pos * dynamic_range;
+        float bin_luminance = exp2(bin_log);
+        bin_average += weight * bin_luminance;
+    }
+
+    bin_average /= float(weight_sum);
+    return max(bin_average, 1e-8);
+}
+
+#endif
+
+void main()
+{
+    current_avg = mix(previous_avg, calc_avg_luminance(), adaptation_rate);
+    exposure_mult = 0.5 / current_avg;
 }

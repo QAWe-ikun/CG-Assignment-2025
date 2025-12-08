@@ -47,6 +47,7 @@ namespace pipeline
 			device,
 			*shader,
 			target::Light_buffer::light_buffer_format,
+			"Ambient Light Pipeline",
 			graphics::Fullscreen_blend_mode::Add,
 			graphics::Fullscreen_stencil_state{
 				.depth_format = target::Gbuffer::depth_format.format,
@@ -72,7 +73,7 @@ namespace pipeline
 		const target::Gbuffer& gbuffer,
 		const target::AO& ao,
 		const Param& param
-	) noexcept
+	) const noexcept
 	{
 		command_buffer.push_uniform_to_fragment(0, util::as_bytes(param));
 
@@ -89,6 +90,8 @@ namespace pipeline
 
 		const std::array bindings = {albedo_binding, lighting_info_binding, ao_binding};
 
+		command_buffer.push_debug_group("Ambient Light Pass");
 		fullscreen_pass.render_to_renderpass(render_pass, bindings, std::nullopt, std::nullopt);
+		command_buffer.pop_debug_group();
 	}
 }

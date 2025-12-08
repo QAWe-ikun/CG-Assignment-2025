@@ -35,6 +35,8 @@ class Logic
 		glm::vec3 light_color;
 		float turbidity;
 		float sky_brightness_mult;
+		float bloom_attenuation;
+		float bloom_strength;
 
 		Debug_mode debug_mode;
 
@@ -51,13 +53,15 @@ class Logic
 
 	/* Lighting Control */
 
-	float light_azimuth = 0.0;
-	float light_pitch = glm::radians(78.0);
+	float light_azimuth = glm::radians(103.0);
+	float light_pitch = glm::radians(53.0);
 
 	glm::vec3 light_color = {1.0, 1.0, 1.0};
-	float light_intensity = 5.0;
+	float light_intensity = 20.0;
 	float turbidity = 2.0f;
-	float sky_brightness_mult = 0.15f;
+	float sky_brightness_mult = 0.1f;
+	float bloom_attenuation = 0.95f;
+	float bloom_strength = 0.35f;
 
 	float csm_linear_blend = 0.56f;
 

@@ -21,6 +21,7 @@
 #include "pipeline/ambient-light.hpp"
 #include "pipeline/ao.hpp"
 #include "pipeline/auto-exposure.hpp"
+#include "pipeline/bloom.hpp"
 #include "pipeline/debug.hpp"
 #include "pipeline/directional-light.hpp"
 #include "pipeline/sky-preetham.hpp"
@@ -31,12 +32,12 @@
 #include "target.hpp"
 #include "target/ao.hpp"
 #include "target/auto-exposure.hpp"
+#include "target/bloom.hpp"
 #include "target/composite.hpp"
 #include "target/gbuffer.hpp"
 #include "target/light.hpp"
 #include "target/shadow.hpp"
 #include "tiny_gltf.h"
-#include "util/file.hpp"
 #include "util/unwrap.hpp"
 
 struct Render_resource
@@ -49,6 +50,7 @@ struct Render_resource
 	target::Composite composite_target;
 	target::AO ao_target;
 	target::Auto_exposure auto_exposure_target;
+	target::Bloom bloom_target;
 
 	renderer::Gbuffer_gltf gbuffer_renderer;
 	renderer::Shadow_gltf shadow_renderer;
@@ -60,6 +62,7 @@ struct Render_resource
 	pipeline::Debug_pipeline debug_pipeline;
 	pipeline::Sky_preetham sky_pipeline;
 	pipeline::Auto_exposure auto_exposure_pipeline;
+	pipeline::Bloom bloom_pipeline;
 
 	graphics::Renderpass_copy depth_to_color_copier;
 
@@ -117,6 +120,9 @@ static std::expected<Render_resource, util::Error> create_render_resource(
 	if (!auto_exposure_pipeline)
 		return auto_exposure_pipeline.error().forward("Create auto exposure pipeline failed");
 
+	auto bloom_pipeline = pipeline::Bloom::create(context.device);
+	if (!bloom_pipeline) return bloom_pipeline.error().forward("Create bloom pipeline failed");
+
 	auto depth_to_color_copier =
 		graphics::Renderpass_copy::create(context.device, 1, target::Gbuffer::depth_value_format);
 	if (!depth_to_color_copier)
@@ -124,12 +130,13 @@ static std::expected<Render_resource, util::Error> create_render_resource(
 
 	return Render_resource{
 		.aa_module = std::move(*aa_module),
-		.gbuffer_target = target::Gbuffer{},
-		.shadow_target = target::Shadow{},
-		.light_buffer_target = target::Light_buffer{},
-		.composite_target = target::Composite{},
-		.ao_target = target::AO{},
+		.gbuffer_target = {},
+		.shadow_target = {},
+		.light_buffer_target = {},
+		.composite_target = {},
+		.ao_target = {},
 		.auto_exposure_target = std::move(*auto_exposure_target),
+		.bloom_target = {},
 
 		.gbuffer_renderer = std::move(*gbuffer_renderer),
 		.shadow_renderer = std::move(*shadow_renderer),
@@ -141,6 +148,7 @@ static std::expected<Render_resource, util::Error> create_render_resource(
 		.debug_pipeline = std::move(*debug_pipeline),
 		.sky_pipeline = std::move(*sky_pipeline),
 		.auto_exposure_pipeline = std::move(*auto_exposure_pipeline),
+		.bloom_pipeline = std::move(*bloom_pipeline),
 
 		.depth_to_color_copier = std::move(*depth_to_color_copier),
 
@@ -151,12 +159,12 @@ static std::expected<Render_resource, util::Error> create_render_resource(
 
 static std::expected<gltf::Model, util::Error> create_scene_from_model(
 	const backend::SDL_context& context,
-	const std::vector<std::byte>& model_data
+	const std::string& path
 ) noexcept
 {
 	auto gltf_load_result = backend::display_until_task_done(
 		context,
-		std::async(std::launch::async, gltf::load_tinygltf_model, std::ref(model_data)),
+		std::async(std::launch::async, gltf::load_tinygltf_model_from_file, std::ref(path)),
 		[] {
 			ImGui::Text("加载模型...");
 			ImGui::ProgressBar(-ImGui::GetTime(), ImVec2(300.0f, 0.0f));
@@ -171,7 +179,7 @@ static std::expected<gltf::Model, util::Error> create_scene_from_model(
 			context.device,
 			*gltf_load_result,
 			gltf::Sampler_config{.anisotropy = 4.0f},
-			{.color_mode = gltf::Color_compress_mode::RGBA8_BC7,
+			{.color_mode = gltf::Color_compress_mode::RGBA8_BC3,
 			 .normal_mode = gltf::Normal_compress_mode::RGn_BC5},
 			std::ref(load_progress)
 		);
@@ -225,12 +233,7 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 		)
 		| util::unwrap("Create render resource failed");
 
-	auto model =
-		util::read_file(model_path, 1024 * 1048576)
-			.and_then([&sdl_context](const std::vector<std::byte>& model) {
-				return create_scene_from_model(sdl_context, model);
-			})
-		| util::unwrap("Load 3D model failed");
+	auto model = create_scene_from_model(sdl_context, model_path) | util::unwrap("Load 3D model failed");
 
 	Logic logic;
 
@@ -278,6 +281,9 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 		);
 		shadow_drawdata.append(drawdata);
 
+		gbuffer_drawdata.sort();
+		shadow_drawdata.sort();
+
 		/*===== Render =====*/
 
 		auto command_buffer = gpu::Command_buffer::acquire_from(gpu_device) | util::unwrap();
@@ -298,6 +304,7 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 		render_resource.shadow_target.resize(gpu_device, {3072, 3072}) | util::unwrap();
 		render_resource.ao_target.cycle(gpu_device, swapchain_size) | util::unwrap();
 		render_resource.auto_exposure_target.cycle();
+		render_resource.bloom_target.resize(gpu_device, swapchain_size) | util::unwrap();
 
 		backend::imgui_upload_data(command_buffer);
 
@@ -306,7 +313,6 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 				drawdata.deferred_skin_resource->upload_gpu_buffers(copy_pass);
 		}) | util::unwrap();
 
-		command_buffer.push_debug_group("GBuffer Pass");
 		auto gbuffer_pass =
 			acquire_gbuffer_pass(
 				command_buffer,
@@ -316,7 +322,6 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 			| util::unwrap("获取 G-buffer Pass失败");
 		render_resource.gbuffer_renderer.render(command_buffer, gbuffer_pass, gbuffer_drawdata);
 		gbuffer_pass.end();
-		command_buffer.pop_debug_group();
 
 		render_resource.depth_to_color_copier.copy(
 			command_buffer,
@@ -324,12 +329,9 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 			render_resource.gbuffer_target.depth_value_texture.current()
 		) | util::unwrap("Copy depth to color failed");
 
-		command_buffer.push_debug_group("Shadow Pass");
 		render_resource.shadow_renderer.render(command_buffer, render_resource.shadow_target, shadow_drawdata)
 			| util::unwrap("渲染阴影失败");
-		command_buffer.pop_debug_group();
 
-		command_buffer.push_debug_group("AO Pass");
 		auto ao_pass = target::acquire_ao_pass(command_buffer, render_resource.ao_target)
 			| util::unwrap("获取 AO Pass失败");
 		render_resource.ao_pipeline.render(
@@ -347,9 +349,7 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 			}
 		);
 		ao_pass.end();
-		command_buffer.pop_debug_group();
 
-		command_buffer.push_debug_group("Lighting Pass");
 		auto lighting_pass =
 			acquire_lighting_pass(
 				command_buffer,
@@ -399,34 +399,44 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 			);
 		}
 		lighting_pass.end();
-		command_buffer.pop_debug_group();
 
-		render_resource.auto_exposure_pipeline.render(
+		render_resource.auto_exposure_pipeline.compute(
 			command_buffer,
 			render_resource.auto_exposure_target,
 			render_resource.light_buffer_target,
 			pipeline::Auto_exposure::Params{
-				.min_luminance = 1e-3,
-				.max_luminance = 5e2,
+				.min_luminance = 1e-2,
+				.max_luminance = 500,
 				.eye_adaptation_rate = 1.5,
 				.delta_time = ImGui::GetIO().DeltaTime
 			},
 			swapchain_size
 		) | util::unwrap("Auto exposure pass failed");
 
+		render_resource.bloom_pipeline.render(
+			command_buffer,
+			render_resource.light_buffer_target,
+			render_resource.bloom_target,
+			render_resource.auto_exposure_target,
+			pipeline::Bloom::Param{
+				.start_threshold = 2.0,
+				.end_threshold = 10.0,
+				.attenuation = logic_result.bloom_attenuation
+			},
+			swapchain_size
+		) | util::unwrap("Bloom pass failed");
+
 		if (logic_result.debug_mode == Logic::Debug_mode::No_debug)
 		{
-			command_buffer.push_debug_group("Tonemapping Pass");
 			render_resource.tonemapping_pipeline.render(
 				command_buffer,
 				render_resource.light_buffer_target,
 				render_resource.auto_exposure_target,
+				render_resource.bloom_target,
 				*render_resource.composite_target.composite_texture,
-				{.exposure = 1.0f}
+				{.bloom_strength = logic_result.bloom_strength}
 			) | util::unwrap();
-			command_buffer.pop_debug_group();
 
-			command_buffer.push_debug_group("Antialiasing Pass");
 			render_resource.aa_module.run(
 				gpu_device,
 				command_buffer,
@@ -435,7 +445,6 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 				swapchain_size,
 				logic_result.aa_mode
 			) | util::unwrap();
-			command_buffer.pop_debug_group();
 		}
 
 		auto swapchain_pass =
@@ -490,7 +499,7 @@ try
 			1280,
 			720,
 			"Demo",
-			SDL_WINDOW_RESIZABLE,
+			SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED,
 			backend::Vulkan_config{
 				.debug_enabled = enable_debug_layer,
 			}
@@ -498,7 +507,7 @@ try
 		| util::unwrap("Initialize SDL Backend failed");
 
 	const auto window = sdl_context->window;
-	SDL_SetWindowMinimumSize(window, 640, 480);
+	SDL_SetWindowMinimumSize(window, 800, 600);
 
 	backend::initialize_imgui(*sdl_context) | util::unwrap();
 

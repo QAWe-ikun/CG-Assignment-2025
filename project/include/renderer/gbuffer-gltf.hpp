@@ -25,6 +25,7 @@ namespace renderer
 			{
 				gltf::Primitive_drawcall drawcall;
 				size_t resource_set_index;
+				float max_z;
 			};
 
 			struct Resource
@@ -68,6 +69,12 @@ namespace renderer
 			/// @return Maximum z depth
 			///
 			float get_min_z() const noexcept;
+
+			///
+			/// @brief Sort drawcalls for optimal rendering
+			///
+			///
+			void sort() noexcept;
 		};
 
 		///

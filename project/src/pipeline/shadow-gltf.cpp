@@ -240,7 +240,8 @@ namespace pipeline
 				used_vertex_attributes,
 				used_vertex_buffer_descs,
 				{},
-				depth_stencil_state
+				depth_stencil_state,
+				std::format("Shadow Gltf Pipeline (mode: {}, rigged: {})", mode.to_string(), rigged)
 			);
 		}
 	}

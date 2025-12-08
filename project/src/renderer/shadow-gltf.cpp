@@ -109,7 +109,11 @@ namespace renderer
 			if (target.empty()) target.reserve(1024);
 
 			target.emplace_back(
-				Drawcall{.drawcall = drawcall, .resource_set_index = current_resource_set_idx}
+				Drawcall{
+					.drawcall = drawcall,
+					.resource_set_index = current_resource_set_idx,
+					.min_z = -min_z.z
+				}
 			);
 		}
 	}
@@ -128,9 +132,20 @@ namespace renderer
 		return projection_matrix * smallest_bound.view_matrix;
 	}
 
+	void Shadow_gltf::Drawdata::CSM_level_data::sort() noexcept
+	{
+		for (auto& drawcall_vec : drawcalls | std::views::values)
+			std::ranges::sort(drawcall_vec, {}, &Drawcall::min_z);
+	}
+
 	void Shadow_gltf::Drawdata::append(const gltf::Drawdata& drawdata) noexcept
 	{
 		for (auto& level : csm_levels) level.append(drawdata);
+	}
+
+	void Shadow_gltf::Drawdata::sort() noexcept
+	{
+		for (auto& level : csm_levels) level.sort();
 	}
 
 	glm::mat4 Shadow_gltf::Drawdata::get_vp_matrix(size_t level) const noexcept
@@ -153,6 +168,7 @@ namespace renderer
 		const Drawdata& drawdata
 	) const noexcept
 	{
+		command_buffer.push_debug_group("Shadow Pass");
 		for (const auto [level, level_data] : drawdata.csm_levels | std::views::enumerate)
 		{
 			auto shadow_pass_result = target::acquire_shadow_pass(command_buffer, shadow_target, level);
@@ -167,7 +183,7 @@ namespace renderer
 
 				draw_pipeline.bind(command_buffer, shadow_pass, level_data.get_vp_matrix());
 
-				for (const auto& [drawcall, set_idx] : drawcalls)
+				for (const auto& [drawcall, set_idx, _] : drawcalls)
 				{
 					const auto& resource_set = level_data.resource_sets[set_idx];
 
@@ -186,6 +202,7 @@ namespace renderer
 
 			shadow_pass.end();
 		}
+		command_buffer.pop_debug_group();
 
 		return {};
 	}

@@ -1,3 +1,5 @@
+// Computes HBAO
+
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
@@ -8,12 +10,12 @@
 layout(location = 0) in vec2 uv;
 layout(location = 1) in vec2 ndc;
 
-layout(location = 0) out float out_ao;
+layout(location = 0) out float out_ao; // AO Intensity Output, 0 for no occlusion, 1 for fully occluded
 
-layout(set = 2, binding = 0) uniform sampler2D depth_tex;
-layout(set = 2, binding = 1) uniform usampler2D light_info_tex;
-layout(set = 2, binding = 2) uniform sampler2D prev_depth_tex;
-layout(set = 2, binding = 3) uniform sampler2D prev_ao_tex;
+layout(set = 2, binding = 0) uniform sampler2D depth_tex; // Depth Input (Current Frame)
+layout(set = 2, binding = 1) uniform usampler2D light_info_tex; // Light Info Input (Current Frame) -- for normals
+layout(set = 2, binding = 2) uniform sampler2D prev_depth_tex; // Depth Input (Previous Frame)
+layout(set = 2, binding = 3) uniform sampler2D prev_ao_tex; // AO Input (Previous Frame)
 
 layout(std140, set = 3, binding = 0) uniform Params
 {
@@ -48,7 +50,7 @@ vec3 homo_transform(mat4 mat, vec3 vec)
 
 vec3 get_view_normal()
 {
-    const vec2 little_offset = 0.1 / vec2(depth_render_size);
+    const vec2 little_offset = 0.5 / vec2(depth_render_size);
     vec3 world_normal = unpack_normal(textureLod(light_info_tex, uv - little_offset, 0).r);
     vec4 view_normal = view_mat * vec4(world_normal, 0.0);
     return view_normal.xyz;
@@ -84,6 +86,7 @@ void main()
         for (uint i = 0; i < SAMPLE_COUNT; i++)
         {
             sample_ndc += sample_step * mix(0.5, 1.5, noise_function(sample_ndc * vec2(152.12, 843.2), random_seed));
+            
             if (any(greaterThan(abs(sample_ndc), vec2(1.0)))) break;
 
             const float sample_depth = textureLod(depth_tex, ndc_to_uv(sample_ndc), 0.0).r;
@@ -91,10 +94,10 @@ void main()
 
             const vec3 sample_view_pos = homo_transform(proj_mat_inv, vec3(sample_ndc, sample_depth));
             const vec3 sample_ray_dir = sample_view_pos - view_pos;
+            float cos_angle = dot(normalize(sample_ray_dir), view_normal);
 
             if (sample_ray_dir.z > clamp_distance) continue;
 
-            float cos_angle = dot(normalize(sample_ray_dir), view_normal);
             if (cos_angle > max_cos_angle)
             {
                 max_cos_angle = cos_angle;

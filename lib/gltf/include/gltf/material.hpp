@@ -37,6 +37,8 @@ namespace gltf
 
 		std::strong_ordering operator<=>(const Pipeline_mode&) const noexcept = default;
 		bool operator==(const Pipeline_mode&) const noexcept = default;
+
+		std::string to_string() const noexcept;
 	};
 
 	// Material Parameters

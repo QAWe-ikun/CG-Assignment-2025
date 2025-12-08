@@ -3,7 +3,9 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
-#include "../common//gbuffer-storage.glsl"
+#include "../common/gbuffer-storage.glsl"
+
+layout(early_fragment_tests) in;
 
 layout(location = 0) in vec2 in_uv;
 layout(location = 1) in vec3 in_normal;
@@ -52,7 +54,7 @@ void main()
 
     /* Normal Mapping */
 
-    vec2 normal_xy = normal_tex_sample * 2.0 - 1.0;
+    vec2 normal_xy = fma(normal_tex_sample, vec2(2.0), vec2(-1.0));
     vec3 normal = vec3(normal_xy, max(0.0, 1.0 - dot(normal_xy, normal_xy)));
     normal.xy *= normal_scale;
 
@@ -72,6 +74,6 @@ void main()
 
     /* Emissive */
 
-    vec3 emissive = texture(emissive_tex, in_uv).rgb * emissive_factor;
+    vec3 emissive = emissive_tex_sample * emissive_factor;
     out_light_buffer = vec4(emissive, 0.0);
 }

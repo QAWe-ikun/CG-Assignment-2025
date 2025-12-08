@@ -49,6 +49,7 @@ namespace pipeline
 			device,
 			*fragment_shader,
 			target::Light_buffer::light_buffer_format,
+			"Directional Light Pipeline",
 			graphics::Fullscreen_blend_mode::Add,
 			graphics::Fullscreen_stencil_state{
 				.depth_format = target::Gbuffer::depth_format.format,
@@ -75,7 +76,7 @@ namespace pipeline
 		const target::Gbuffer& gbuffer,
 		const target::Shadow& shadow,
 		const Params& params
-	) noexcept
+	) const noexcept
 	{
 		const auto gbuffer_albedo_sampler_binding =
 			SDL_GPUTextureSamplerBinding{.texture = *gbuffer.albedo_texture, .sampler = sampler};
@@ -107,7 +108,10 @@ namespace pipeline
 		};
 
 		command_buffer.push_uniform_to_fragment(0, util::as_bytes(params));
+
+		command_buffer.push_debug_group("Directional Light Pass");
 		fullscreen_pass
 			.render_to_renderpass(render_pass, std::span(sampler_bindings), std::nullopt, std::nullopt);
+		command_buffer.pop_debug_group();
 	}
 }

@@ -33,18 +33,24 @@ namespace renderer
 		Mode mode
 	) noexcept
 	{
-		switch (mode)
-		{
-		case Mode::None:
-			return empty_processor.run_antialiasing(device, command_buffer, source, target, size);
-		case Mode::FXAA:
-			return fxaa_processor.run_antialiasing(device, command_buffer, source, target, size);
-		case Mode::MLAA:
-			return mlaa_processor.run_antialiasing(device, command_buffer, source, target, size);
-		case Mode::SMAA:
-			return smaa_processor.run_antialiasing(device, command_buffer, source, target, size);
-		default:
-			return util::Error("Unknown antialiasing mode");
-		}
+		command_buffer.push_debug_group("Antialiasing Pass");
+		auto result = [&] -> std::expected<void, util::Error> {
+			switch (mode)
+			{
+			case Mode::None:
+				return empty_processor.run_antialiasing(device, command_buffer, source, target, size);
+			case Mode::FXAA:
+				return fxaa_processor.run_antialiasing(device, command_buffer, source, target, size);
+			case Mode::MLAA:
+				return mlaa_processor.run_antialiasing(device, command_buffer, source, target, size);
+			case Mode::SMAA:
+				return smaa_processor.run_antialiasing(device, command_buffer, source, target, size);
+			default:
+				return util::Error("Unknown antialiasing mode");
+			}
+		}();
+		command_buffer.pop_debug_group();
+
+		return result;
 	}
 }

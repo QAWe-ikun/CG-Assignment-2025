@@ -58,7 +58,8 @@ namespace graphics
 			SDL_GPUDevice* device,
 			const gpu::Graphics_shader& fragment,
 			gpu::Texture::Format target_format,
-			Fullscreen_blend_mode blend_mode,
+			const std::string& name,
+			Fullscreen_blend_mode blend_mode = Fullscreen_blend_mode::Overwrite,
 			std::optional<Fullscreen_stencil_state> stencil_state = std::nullopt
 		) noexcept;
 
@@ -76,7 +77,7 @@ namespace graphics
 			std::optional<std::span<const SDL_GPUTextureSamplerBinding>> samplers,
 			std::optional<std::span<SDL_GPUTexture* const>> storage_textures,
 			std::optional<std::span<SDL_GPUBuffer* const>> storage_buffers
-		) noexcept;
+		) const noexcept;
 
 	  private:
 
@@ -126,7 +127,8 @@ namespace graphics
 			SDL_GPUDevice* device,
 			const gpu::Graphics_shader& fragment,
 			gpu::Texture::Format target_format,
-			Config config
+			Config config,
+			const std::string& name
 		) noexcept;
 
 		///
@@ -145,7 +147,7 @@ namespace graphics
 			std::optional<std::span<const SDL_GPUTextureSamplerBinding>> samplers,
 			std::optional<std::span<SDL_GPUTexture* const>> storage_textures,
 			std::optional<std::span<SDL_GPUBuffer* const>> storage_buffers
-		) noexcept;
+		) const noexcept;
 
 	  private:
 

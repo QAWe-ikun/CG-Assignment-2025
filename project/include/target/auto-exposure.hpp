@@ -50,6 +50,7 @@ namespace target
 		struct Result_buffer_struct
 		{
 			float avg_brightness;
+			float exposure_mult;
 		};
 
 		gpu::Buffer bin_buffer;

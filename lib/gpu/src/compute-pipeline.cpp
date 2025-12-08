@@ -5,12 +5,16 @@ namespace gpu
 {
 	std::expected<Compute_pipeline, util::Error> Compute_pipeline::create(
 		SDL_GPUDevice* device,
-		const Create_info& create_info
+		const Create_info& create_info,
+		const std::string& name
 	) noexcept
 	{
 		assert(device != nullptr);
 		assert(create_info.shader_data.data() != nullptr);
 		assert(!create_info.shader_data.empty());
+
+		const auto prop = SDL_CreateProperties();
+		SDL_SetStringProperty(prop, SDL_PROP_GPU_COMPUTEPIPELINE_CREATE_NAME_STRING, name.c_str());
 
 		const SDL_GPUComputePipelineCreateInfo sdl_create_info{
 			.code_size = create_info.shader_data.size(),
@@ -26,12 +30,11 @@ namespace gpu
 			.threadcount_x = create_info.threadcount_x,
 			.threadcount_y = create_info.threadcount_y,
 			.threadcount_z = create_info.threadcount_z,
-			.props = 0
+			.props = prop
 		};
 
-		// https://github.com/libsdl-org/SDL/blob/aae2f74ae611652b2858393fdf6e4d6d6cb85384/src/gpu/vulkan/SDL_gpu_vulkan.c#L3780
-
 		auto* const pipeline = SDL_CreateGPUComputePipeline(device, &sdl_create_info);
+		SDL_DestroyProperties(prop);
 		if (pipeline == nullptr) RETURN_SDL_ERROR;
 
 		return Compute_pipeline(device, pipeline);

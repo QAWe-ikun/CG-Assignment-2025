@@ -68,7 +68,7 @@ namespace image
 			.pixels = std::vector<BC_block_8bpp>((src.size.x / 4) * (src.size.y / 4))
 		};
 
-		return std::move(dst_image);
+		return dst_image;
 	}
 
 	std::expected<BC_image_8bpp, util::Error> compress_to_bc3(

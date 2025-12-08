@@ -113,7 +113,8 @@ namespace gpu
 			std::span<const SDL_GPUVertexAttribute> vertex_attributes,
 			std::span<const SDL_GPUVertexBufferDescription> vertex_buffer_descs,
 			std::span<const SDL_GPUColorTargetDescription> color_target_descs,
-			const std::optional<Depth_stencil_state>& depth_stencil_state
+			const std::optional<Depth_stencil_state>& depth_stencil_state,
+			const std::string& name
 		) noexcept;
 
 	  private:

@@ -44,7 +44,8 @@ namespace gpu
 		///
 		static std::expected<Compute_pipeline, util::Error> create(
 			SDL_GPUDevice* device,
-			const Create_info& create_info
+			const Create_info& create_info,
+			const std::string& name
 		) noexcept;
 
 	  private:

@@ -151,7 +151,7 @@ namespace gltf
 				meshes.emplace_back(std::move(*result));
 			}
 
-			return std::move(meshes);
+			return meshes;
 		}
 
 		static std::expected<std::vector<Animation>, util::Error> load_animations(
@@ -170,7 +170,7 @@ namespace gltf
 				animations.emplace_back(std::move(*animation_result));
 			}
 
-			return std::move(animations);
+			return animations;
 		}
 	}
 
@@ -264,7 +264,7 @@ namespace gltf
 		if (!material_bind_cache_result) return util::Error("Generate material bind cache failed");
 		model.material_bind_cache = std::move(*material_bind_cache_result);
 
-		return std::move(model);
+		return model;
 	}
 
 	Model::Model(
@@ -468,6 +468,27 @@ namespace gltf
 
 		if (!ret) return util::Error(std::format("Load GLTF model failed: {}", err));
 
-		return std::move(model);
+		return model;
+	}
+
+	std::expected<tinygltf::Model, util::Error> load_tinygltf_model_from_file(
+		const std::string& filepath
+	) noexcept
+	{
+		tinygltf::TinyGLTF loader;
+		tinygltf::Model model;
+
+		std::string err;
+		std::string warn;
+
+		const bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, filepath);
+		if (!ret)
+		{
+			// Try binary load
+			const bool ret_bin = loader.LoadBinaryFromFile(&model, &err, &warn, filepath);
+			if (!ret_bin) return util::Error(std::format("Load GLTF model failed: {}", err));
+		}
+
+		return model;
 	}
 }

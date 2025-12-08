@@ -35,6 +35,7 @@ namespace pipeline
 			device,
 			*fragment_shader,
 			target::Light_buffer::light_buffer_format,
+			"Sky Preetham Pipeline",
 			graphics::Fullscreen_blend_mode::Add,
 			graphics::Fullscreen_stencil_state{
 				.depth_format = target::Gbuffer::depth_format.format,
@@ -129,11 +130,13 @@ namespace pipeline
 		const gpu::Command_buffer& command_buffer,
 		const gpu::Render_pass& render_pass,
 		const Params& params
-	) noexcept
+	) const noexcept
 	{
 		const Internal_params internal_params(params);
 		command_buffer.push_uniform_to_fragment(0, util::as_bytes(internal_params));
 
+		command_buffer.push_debug_group("Sky Preetham Pass");
 		fullscreen_pass.render_to_renderpass(render_pass, {}, {}, {});
+		command_buffer.pop_debug_group();
 	}
 }

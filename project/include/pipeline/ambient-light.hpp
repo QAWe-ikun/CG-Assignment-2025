@@ -27,7 +27,7 @@ namespace pipeline
 			const target::Gbuffer& gbuffer,
 			const target::AO& ao,
 			const Param& param
-		) noexcept;
+		) const noexcept;
 
 	  private:
 

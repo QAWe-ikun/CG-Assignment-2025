@@ -1,5 +1,6 @@
 #include "gpu/graphics-pipeline.hpp"
 #include "gpu/util.hpp"
+#include <SDL3/SDL_properties.h>
 
 namespace gpu
 {
@@ -65,10 +66,14 @@ namespace gpu
 		std::span<const SDL_GPUVertexAttribute> vertex_attributes,
 		std::span<const SDL_GPUVertexBufferDescription> vertex_buffer_descs,
 		std::span<const SDL_GPUColorTargetDescription> color_target_descs,
-		const std::optional<Graphics_pipeline::Depth_stencil_state>& depth_stencil_state
+		const std::optional<Graphics_pipeline::Depth_stencil_state>& depth_stencil_state,
+		const std::string& name
 	) noexcept
 	{
 		SDL_GPUGraphicsPipelineCreateInfo create_info{};
+
+		const auto prop = SDL_CreateProperties();
+		SDL_SetStringProperty(prop, SDL_PROP_GPU_GRAPHICSPIPELINE_CREATE_NAME_STRING, name.c_str());
 
 		create_info.vertex_shader = vertex_shader;
 		create_info.fragment_shader = fragment_shader;
@@ -95,7 +100,10 @@ namespace gpu
 			depth_stencil_state.transform([](const auto& state) { return state.to_sdl(); })
 				.value_or(SDL_GPUDepthStencilState{});
 
+		create_info.props = prop;
+
 		auto* const raw_pipeline = SDL_CreateGPUGraphicsPipeline(device, &create_info);
+		SDL_DestroyProperties(prop);
 		if (raw_pipeline == nullptr) RETURN_SDL_ERROR;
 
 		return Graphics_pipeline(device, raw_pipeline);

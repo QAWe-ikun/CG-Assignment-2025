@@ -21,7 +21,8 @@ namespace pipeline
 		);
 		if (!shader) return shader.error().forward("Create debug single channel shader failed");
 
-		auto fullscreen_pass = graphics::Fullscreen_pass<false>::create(device, *shader, format, {});
+		auto fullscreen_pass =
+			graphics::Fullscreen_pass<false>::create(device, *shader, format, "Debug Pipeline");
 		if (!fullscreen_pass) return fullscreen_pass.error().forward("Create fullscreen pass failed");
 
 		const gpu::Sampler::Create_info sampler_create_info{
@@ -41,7 +42,7 @@ namespace pipeline
 		const gpu::Render_pass& render_pass,
 		SDL_GPUTexture* input_texture,
 		glm::u32vec2 size [[maybe_unused]]
-	) noexcept
+	) const noexcept
 	{
 		const auto bind = SDL_GPUTextureSamplerBinding{.texture = input_texture, .sampler = sampler};
 		const std::array bindings = {bind};
