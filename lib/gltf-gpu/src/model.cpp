@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <queue>
+#include <ranges>
 #include <set>
 #include <thread_pool/thread_pool.h>
 
@@ -217,6 +218,10 @@ namespace gltf
 
 		model.compute_renderable_nodes();
 
+		auto material_bind_cache_result = model.material_list.gen_material_cache();
+		if (!material_bind_cache_result) return util::Error("Generate material bind cache failed");
+		model.material_bind_cache = std::move(*material_bind_cache_result);
+
 		return std::move(model);
 	}
 
@@ -239,7 +244,7 @@ namespace gltf
 		)
 	{}
 
-	std::vector<Drawdata> Model::generate_drawdata(const glm::mat4& model_transform) const noexcept
+	Drawdata Model::generate_drawdata(const glm::mat4& model_transform) const noexcept
 	{
 		std::vector<glm::mat4> node_world_matrices(nodes.size(), glm::mat4(1.0f));
 
@@ -249,13 +254,15 @@ namespace gltf
 
 			const glm::mat4 parent_matrix =
 				node_parents[node_index]
-					.transform([&](uint32_t parent_index) { return node_world_matrices[parent_index]; })
+					.transform([&node_world_matrices](uint32_t parent_index) {
+						return node_world_matrices[parent_index];
+					})
 					.value_or(model_transform);
 
 			node_world_matrices[node_index] = parent_matrix * node.get_local_transform();
 		}
 
-		std::vector<Drawdata> drawdata_list;
+		std::vector<Drawcall> drawdata_list;
 		drawdata_list.reserve(primitive_count);
 
 		for (const auto node_index : node_topo_order)
@@ -270,21 +277,17 @@ namespace gltf
 
 			for (const auto& primitive : mesh.primitives)
 			{
-				const auto material_bind = material_list.gen_binding_info(primitive.material);
-				if (!material_bind.has_value()) [[unlikely]]
-					continue;  // Skip primitives with invalid material
-
 				drawdata_list.push_back(
-					Drawdata{
-						.world_matrix = world_matrix,
-						.primitive = primitive.gen_drawdata(false),
-						.material = *material_bind
+					Drawcall{
+						.transform = world_matrix,
+						.primitive = primitive.gen_drawdata(),
+						.material_index = primitive.material
 					}
 				);
 			}
 		}
 
-		return drawdata_list;
+		return {.drawcalls = std::move(drawdata_list), .material_cache = material_bind_cache->ref()};
 	}
 
 	std::expected<tinygltf::Model, util::Error> load_tinygltf_model(

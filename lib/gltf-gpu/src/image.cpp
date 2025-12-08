@@ -1,6 +1,6 @@
 #include "gltf/image.hpp"
 
-#include <graphic/util/tool.hpp>
+#include <graphics/util/quick-create.hpp>
 #include <image/algo/mipmap.hpp>
 #include <image/compress.hpp>
 #include <util/as-byte.hpp>
@@ -165,25 +165,54 @@ namespace gltf
 		return dim_power_of_2(size.x) && dim_power_of_2(size.y);
 	}
 
+	static bool image_size_multiple_of_block(glm::u32vec2 size) noexcept
+	{
+		return (size.x % 4 == 0) && (size.y % 4 == 0);
+	}
+
+	static auto create_texture_from_mipmap_fn(SDL_GPUDevice* device, SDL_GPUTextureFormat format) noexcept
+	{
+		return [device, format](const auto& img) -> std::expected<gpu::Texture, util::Error> {
+			return graphics::create_texture_from_mipmap(
+				device,
+				gpu::Texture::Format{
+					.type = SDL_GPU_TEXTURETYPE_2D,
+					.format = format,
+					.usage = {.sampler = true}
+				},
+				img
+			);
+		};
+	}
+
+	template <typename T>
+	static std::function<std::expected<gpu::Texture, util::Error>(const image::Image_container<T>&)>
+	create_texture_from_image_fn(SDL_GPUDevice* device, SDL_GPUTextureFormat format) noexcept
+	{
+		return [device, format](const image::Image_container<T>& img) {
+			return graphics::create_texture_from_image(
+				device,
+				gpu::Texture::Format{
+					.type = SDL_GPU_TEXTURETYPE_2D,
+					.format = format,
+					.usage = {.sampler = true}
+				},
+				img
+			);
+		};
+	}
+
 	static std::expected<gpu::Texture, util::Error> create_color_uncompressed(
 		SDL_GPUDevice* device,
 		const tinygltf::Image& image
 	) noexcept
 	{
-		auto img = extract_u8_rgba(image);
-		if (!img) return img.error().propagate("Extract image failed");
-
-		const auto mipmap_chain = image::generate_mipmap(*img);
-
-		return graphic::create_texture_from_mipmap_chain(
-			device,
-			gpu::Texture::Format{
-				.type = SDL_GPU_TEXTURETYPE_2D,
-				.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-				.usage = {.sampler = true}
-			},
-			mipmap_chain
-		);
+		return extract_u8_rgba(image)
+			.transform([](const auto& uncompressed_image) {
+				return image::generate_mipmap(uncompressed_image);
+			})
+			.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM))
+			.transform_error(util::Error::propagate_fn());
 	}
 
 	static std::expected<gpu::Texture, util::Error> create_color_bc3(
@@ -191,27 +220,35 @@ namespace gltf
 		const tinygltf::Image& image
 	) noexcept
 	{
-		if (!image_power_of_2({uint32_t(image.width), uint32_t(image.height)}))
-			return create_color_uncompressed(device, image);
+		const auto image_size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height));
 
-		auto compressed_mipmap_chain =
-			extract_u8_rgba(image)
-				.transform([](const image::Image_container<glm::vec<4, unsigned char>>& uncompressed_image) {
-					return image::generate_mipmap(uncompressed_image, {4, 4});
-				})
-				.and_then(image::Compress_mipmap(image::compress_to_bc3));
-		if (!compressed_mipmap_chain)
-			return compressed_mipmap_chain.error().propagate("Extract image or compress to BC3 failed");
+		if (!image_power_of_2(image_size))
+		{
+			if (!image_size_multiple_of_block(image_size))  // No compress, no mipmaps
+			{
+				return create_color_uncompressed(device, image).transform_error(util::Error::propagate_fn());
+			}
+			else  // Compress, no mipmaps
+			{
+				return extract_u8_rgba(image)
+					.and_then(image::compress_to_bc3)
+					.and_then(
+						create_texture_from_image_fn<image::BC_block_8bpp>(
+							device,
+							SDL_GPU_TEXTUREFORMAT_BC3_RGBA_UNORM
+						)
+					)
+					.transform_error(util::Error::propagate_fn());
+			}
+		}
 
-		return graphic::create_texture_from_mipmap_chain(
-			device,
-			gpu::Texture::Format{
-				.type = SDL_GPU_TEXTURETYPE_2D,
-				.format = SDL_GPU_TEXTUREFORMAT_BC3_RGBA_UNORM,
-				.usage = {.sampler = true}
-			},
-			*compressed_mipmap_chain
-		);
+		return extract_u8_rgba(image)
+			.transform([](const auto& uncompressed_image) {
+				return image::generate_mipmap(uncompressed_image, {4, 4});
+			})
+			.and_then(image::Compress_mipmap(image::compress_to_bc3))
+			.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_BC3_RGBA_UNORM))
+			.transform_error(util::Error::propagate_fn());
 	}
 
 	static std::expected<gpu::Texture, util::Error> create_color_bc7(
@@ -219,27 +256,35 @@ namespace gltf
 		const tinygltf::Image& image
 	) noexcept
 	{
-		if (!image_power_of_2({uint32_t(image.width), uint32_t(image.height)}))
-			return create_color_uncompressed(device, image);
+		const auto image_size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height));
 
-		auto compressed_mipmap_chain =
-			extract_u8_rgba(image)
-				.transform([](const image::Image_container<glm::vec<4, unsigned char>>& uncompressed_image) {
-					return image::generate_mipmap(uncompressed_image, {4, 4});
-				})
-				.and_then(image::Compress_mipmap(image::compress_to_bc7));
-		if (!compressed_mipmap_chain)
-			return compressed_mipmap_chain.error().propagate("Extract image or compress to BC7 failed");
+		if (!image_power_of_2(image_size))
+		{
+			if (!image_size_multiple_of_block(image_size))  // No compress, no mipmaps
+			{
+				return create_color_uncompressed(device, image);
+			}
+			else  // Compress, no mipmaps
+			{
+				return extract_u8_rgba(image)
+					.and_then(image::compress_to_bc7)
+					.and_then(
+						create_texture_from_image_fn<image::BC_block_8bpp>(
+							device,
+							SDL_GPU_TEXTUREFORMAT_BC7_RGBA_UNORM
+						)
+					)
+					.transform_error(util::Error::propagate_fn());
+			}
+		}
 
-		return graphic::create_texture_from_mipmap_chain(
-			device,
-			gpu::Texture::Format{
-				.type = SDL_GPU_TEXTURETYPE_2D,
-				.format = SDL_GPU_TEXTUREFORMAT_BC7_RGBA_UNORM,
-				.usage = {.sampler = true}
-			},
-			*compressed_mipmap_chain
-		);
+		return extract_u8_rgba(image)
+			.transform([](const auto& uncompressed_image) {
+				return image::generate_mipmap(uncompressed_image, {4, 4});
+			})
+			.and_then(image::Compress_mipmap(image::compress_to_bc7))
+			.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_BC7_RGBA_UNORM))
+			.transform_error(util::Error::propagate_fn());
 	}
 
 	static std::expected<gpu::Texture, util::Error> create_normal_8bit(
@@ -248,56 +293,57 @@ namespace gltf
 		bool compress
 	) noexcept
 	{
-		auto img = extract_u8_rgba(image);
-		if (!img) return img.error().propagate("Extract RGBA image failed");
+		const auto image_size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height));
 
 		// Non Power-of-two textures are not compressed and mipmapped
-		if (!image_power_of_2({uint32_t(image.width), uint32_t(image.height)}))
-			return graphic::create_texture_from_image(
-				device,
-				gpu::Texture::Format{
-					.type = SDL_GPU_TEXTURETYPE_2D,
-					.format = SDL_GPU_TEXTUREFORMAT_R8G8_UNORM,
-					.usage = {.sampler = true}
-				},
-				img->map([](const glm::u8vec4& pixel) -> glm::u8vec2 { return {pixel.r, pixel.g}; })
-			);
+		if (!image_power_of_2(image_size))
+		{
+			if (compress && image_size_multiple_of_block(image_size))  // Compress, no mipmaps
+			{
+				return extract_u8_rgba(image)
+					.and_then(image::compress_to_bc5)
+					.and_then(
+						create_texture_from_image_fn<image::BC_block_8bpp>(
+							device,
+							SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM
+						)
+					)
+					.transform_error(util::Error::propagate_fn());
+			}
+			else  // No compress, no mipmaps
+			{
+				return extract_u8_rgba(image)
+					.transform([](const auto& img) {
+						return img.map([](const glm::u8vec4& pixel) -> glm::u8vec2 {
+							return {pixel.r, pixel.g};
+						});
+					})
+					.and_then(
+						create_texture_from_image_fn<glm::u8vec2>(device, SDL_GPU_TEXTUREFORMAT_R8G8_UNORM)
+					)
+					.transform_error(util::Error::propagate_fn());
+			}
+		}
 
 		// Power-of-two textures can be compressed
 		if (compress)
 		{
-			auto mipmap_chain = image::generate_mipmap(img.value(), {4, 4});
-
-			auto compressed_mipmap_chain =
-				image::Compress_mipmap(image::compress_to_bc5)(std::move(mipmap_chain));
-			if (!compressed_mipmap_chain)
-				return compressed_mipmap_chain.error().propagate("Compress to BC5 failed");
-
-			return graphic::create_texture_from_mipmap_chain(
-				device,
-				gpu::Texture::Format{
-					.type = SDL_GPU_TEXTURETYPE_2D,
-					.format = SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM,
-					.usage = {.sampler = true}
-				},
-				*compressed_mipmap_chain
-			);
+			return extract_u8_rgba(image)
+				.transform([](const auto& img) { return image::generate_mipmap(img, {4, 4}); })
+				.and_then(image::Compress_mipmap(image::compress_to_bc5))
+				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM))
+				.transform_error(util::Error::propagate_fn());
 		}
 		else
 		{
-			auto mipmap_chain = image::generate_mipmap(img->map([](const glm::u8vec4& pixel) -> glm::u8vec2 {
-				return {pixel.r, pixel.g};
-			}));
-
-			return graphic::create_texture_from_mipmap_chain(
-				device,
-				gpu::Texture::Format{
-					.type = SDL_GPU_TEXTURETYPE_2D,
-					.format = SDL_GPU_TEXTUREFORMAT_R8G8_UNORM,
-					.usage = {.sampler = true}
-				},
-				mipmap_chain
-			);
+			return extract_u8_rgba(image)
+				.transform([](const auto& img) {
+					return image::generate_mipmap(img.map([](const glm::u8vec4& pixel) -> glm::u8vec2 {
+						return {pixel.r, pixel.g};
+					}));
+				})
+				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_R8G8_UNORM))
+				.transform_error(util::Error::propagate_fn());
 		}
 	}
 
@@ -307,59 +353,69 @@ namespace gltf
 		bool compress
 	) noexcept
 	{
-		auto img = extract_u16_rgba(image);
-		if (!img) return img.error().propagate("Extract RGBA image failed");
+		const auto image_size = glm::u32vec2(uint32_t(image.width), uint32_t(image.height));
 
-		// Non Power-of-two textures are not compressed and mipmapped
-		if (!image_power_of_2({uint32_t(image.width), uint32_t(image.height)}))
-			return graphic::create_texture_from_image(
-				device,
-				gpu::Texture::Format{
-					.type = SDL_GPU_TEXTURETYPE_2D,
-					.format = SDL_GPU_TEXTUREFORMAT_R16G16_UNORM,
-					.usage = {.sampler = true}
-				},
-				img->map([](const glm::u16vec4& pixel) -> glm::u16vec2 { return {pixel.r, pixel.g}; })
-			);
+		// Non Power-of-two textures
+		if (!image_power_of_2(image_size))
+		{
+			if (compress && image_size_multiple_of_block(image_size))  // Compress, no mipmaps
+			{
+				return extract_u16_rgba(image)
+					.transform([&](const auto& img) {
+						return img.map([](const glm::u16vec4& pixel) {
+							return glm::u8vec4(pixel / uint16_t(256));
+						});
+					})
+					.and_then(image::compress_to_bc5)
+					.and_then(
+						create_texture_from_image_fn<image::BC_block_8bpp>(
+							device,
+							SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM
+						)
+					)
+					.transform_error(util::Error::propagate_fn());
+			}
+			else  // No compress, no mipmaps
+			{
+				return extract_u16_rgba(image)
+					.transform([](const auto& image) {
+						return image.map([](const glm::u16vec4& pixel) -> glm::u16vec2 {
+							return {pixel.r, pixel.g};
+						});
+					})
+					.and_then(
+						create_texture_from_image_fn<glm::u16vec2>(device, SDL_GPU_TEXTUREFORMAT_R16G16_UNORM)
+					)
+					.transform_error(util::Error::propagate_fn());
+			}
+		}
 
 		// Power-of-two textures can be compressed
 		if (compress)
 		{
-			auto mipmap_chain = image::generate_mipmap(
-				img->map([](const glm::u16vec4& pixel) -> glm::u8vec4 { return pixel / uint16_t(256); }),
-				{4, 4}
-			);
-
-			auto compressed_mipmap_chain =
-				image::Compress_mipmap(image::compress_to_bc5)(std::move(mipmap_chain));
-			if (!compressed_mipmap_chain)
-				return compressed_mipmap_chain.error().propagate("Compress to BC5 failed");
-
-			return graphic::create_texture_from_mipmap_chain(
-				device,
-				gpu::Texture::Format{
-					.type = SDL_GPU_TEXTURETYPE_2D,
-					.format = SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM,
-					.usage = {.sampler = true}
-				},
-				*compressed_mipmap_chain
-			);
+			return extract_u16_rgba(image)
+				.transform([&](const auto& img) {
+					return image::generate_mipmap(
+						img.map([](const glm::u16vec4& pixel) -> glm::u8vec4 {
+							return pixel / uint16_t(256);
+						}),
+						{4, 4}
+					);
+				})
+				.and_then(image::Compress_mipmap(image::compress_to_bc5))
+				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_BC5_RG_UNORM))
+				.transform_error(util::Error::propagate_fn());
 		}
 		else
 		{
-			auto mipmap_chain = image::generate_mipmap(
-				img->map([](const glm::u16vec4& pixel) -> glm::u16vec2 { return {pixel.r, pixel.g}; })
-			);
-
-			return graphic::create_texture_from_mipmap_chain(
-				device,
-				gpu::Texture::Format{
-					.type = SDL_GPU_TEXTURETYPE_2D,
-					.format = SDL_GPU_TEXTUREFORMAT_R16G16_UNORM,
-					.usage = {.sampler = true}
-				},
-				mipmap_chain
-			);
+			return extract_u16_rgba(image)
+				.transform([](const auto& img) {
+					return image::generate_mipmap(img.map([](const glm::u16vec4& pixel) -> glm::u16vec2 {
+						return {pixel.r, pixel.g};
+					}));
+				})
+				.and_then(create_texture_from_mipmap_fn(device, SDL_GPU_TEXTUREFORMAT_R16G16_UNORM))
+				.transform_error(util::Error::propagate_fn());
 		}
 	}
 
@@ -428,12 +484,13 @@ namespace gltf
 			static_cast<std::uint8_t>(glm::clamp(color.a, 0.0f, 1.0f) * 255.0f)
 		);
 
-		return graphic::create_texture_from_image(
-			device,
-			{.type = SDL_GPU_TEXTURETYPE_2D,
-			 .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-			 .usage = {.sampler = true}},
-			img
-		);
+		return graphics::create_texture_from_image(
+				   device,
+				   {.type = SDL_GPU_TEXTURETYPE_2D,
+					.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+					.usage = {.sampler = true}},
+				   img
+		)
+			.transform_error(util::Error::propagate_fn("Create texture from image failed"));
 	}
 }

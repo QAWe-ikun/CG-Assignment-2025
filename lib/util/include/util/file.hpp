@@ -5,6 +5,7 @@
 #include <expected>
 #include <filesystem>
 #include <vector>
+#include <span>
 
 namespace util
 {

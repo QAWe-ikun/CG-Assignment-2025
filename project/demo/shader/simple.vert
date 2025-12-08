@@ -10,7 +10,7 @@ layout(location = 1) out vec3 out_normal;
 
 layout(std140, set = 1, binding = 0) uniform Transform
 {
-    mat4 matrix;
+    mat4 MVP;
 } transform;
 
 void main()
@@ -18,7 +18,5 @@ void main()
     out_uv = in_uv;
     out_normal = in_normal;
 
-    vec4 pos = transform.matrix * vec4(in_pos, 1.0);
-
-    gl_Position = pos;
+    gl_Position = transform.MVP * vec4(in_pos, 1.0f);
 }

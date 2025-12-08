@@ -24,13 +24,13 @@ namespace gltf
 
 	enum class Image_compress_mode
 	{
-		RGBA8_raw,
-		RGBA8_BC3,
-		RGBA8_BC7,
+		RGBA8_raw,  // Load RGBA8 Image as-is, RGBA16 will be converted to RGBA8
+		RGBA8_BC3,  // Compress to BC3 in addition to `RGBA8_raw`
+		RGBA8_BC7,  // Compress to BC7 in addition to `RGBA8_raw`
 
-		RGn_raw,
-		RGn_BC5,
-		RG16_raw_RG8_BC5,
+		RGn_raw,           // Load RGn Image as-is, bit-depth will be preserved
+		RGn_BC5,           // Compress to BC5 in addition to `RGn_raw`.
+		RG16_raw_RG8_BC5,  // Load RG16 as-is, but compress to BC5 after loading RG8
 	};
 
 	///

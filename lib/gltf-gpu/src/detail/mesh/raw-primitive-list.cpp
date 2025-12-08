@@ -37,9 +37,9 @@ namespace gltf::detail::mesh
 
 		/* Get Texcoord0 Data */
 
-		auto texcoord0_result = get_texcoord(model, primitive, index, "TEXCOORD_0");
-		if (!texcoord0_result) return texcoord0_result.error().propagate("Get primitive TEXCOORD_0 failed");
-		const auto texcoord0_vertices = std::move(*texcoord0_result);
+		auto texcoord0_vertices =
+			get_texcoord(model, primitive, index, "TEXCOORD_0")
+				.value_or(std::vector<glm::vec2>(position_vertices.size(), glm::vec2(0.0f, 0.0f)));
 
 		/* Get Tangent data */
 

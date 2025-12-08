@@ -3,7 +3,7 @@
 #include "gltf/detail/mesh/raw-primitive-list.hpp"
 
 #include <algorithm>
-#include <graphic/util/tool.hpp>
+#include <graphics/util/quick-create.hpp>
 #include <util/as-byte.hpp>
 
 namespace gltf
@@ -23,17 +23,28 @@ namespace gltf
 		auto [optimized_position_only_vertices, position_only_indices] =
 			optimize_position_only_primitive(*vertex_list_result);
 
-		const auto position_min = std::ranges::fold_left(
+		auto position_min = std::ranges::fold_left(
 			optimized_position_only_vertices,
 			glm::vec3(std::numeric_limits<float>::max()),
 			[](const glm::vec3& a, const glm::vec3& b) { return glm::min(a, b); }
 		);
 
-		const auto position_max = std::ranges::fold_left(
+		auto position_max = std::ranges::fold_left(
 			optimized_position_only_vertices,
 			glm::vec3(std::numeric_limits<float>::lowest()),
 			[](const glm::vec3& a, const glm::vec3& b) { return glm::max(a, b); }
 		);
+
+		auto size = position_max - position_min;
+		const auto min_dim = std::min({size.x, size.y, size.z});
+		const auto max_dim = std::max({size.x, size.y, size.z});
+		if (min_dim < 0.0001f * max_dim)
+		{
+			const auto center = (position_min + position_max) * 0.5f;
+			const auto min_extent = 0.0005f * max_dim;
+			position_min = glm::min(position_min, center - glm::vec3(min_extent));
+			position_max = glm::max(position_max, center + glm::vec3(min_extent));
+		}
 
 		return Primitive{
 			.vertices = std::move(optimized_vertices),
@@ -52,18 +63,18 @@ namespace gltf
 	) noexcept
 	{
 		auto vertex_buffer =
-			graphic::create_buffer_with_data(device, {.vertex = true}, util::as_bytes(primitive.vertices));
+			graphics::create_buffer_from_data(device, {.vertex = true}, util::as_bytes(primitive.vertices));
 
 		auto index_buffer =
-			graphic::create_buffer_with_data(device, {.index = true}, util::as_bytes(primitive.indices));
+			graphics::create_buffer_from_data(device, {.index = true}, util::as_bytes(primitive.indices));
 
-		auto position_vertex_buffer = graphic::create_buffer_with_data(
+		auto position_vertex_buffer = graphics::create_buffer_from_data(
 			device,
 			{.vertex = true},
 			util::as_bytes(primitive.position_vertices)
 		);
 
-		auto position_index_buffer = graphic::create_buffer_with_data(
+		auto position_index_buffer = graphics::create_buffer_from_data(
 			device,
 			{.index = true},
 			util::as_bytes(primitive.position_indices)

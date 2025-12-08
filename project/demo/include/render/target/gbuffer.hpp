@@ -1,8 +1,9 @@
 #pragma once
 
+#include <array>
 #include <glm/glm.hpp>
 #include <gpu.hpp>
-#include <graphic/util/smart-texture.hpp>
+#include <graphics/util/smart-texture.hpp>
 
 namespace app::render::target
 {
@@ -31,7 +32,7 @@ namespace app::render::target
 		// - `R[15:0], R[31:16]`: Octahedral-encoded Normal
 		// - `G[15:8]`: Roughness
 		// - `G[7:0]`: Metallic
-		// - `G[23:16]`: Specular Intensity
+		// - `G[23:16]`: None
 		// - `G[31:24]`: AO
 		static constexpr gpu::Texture::Format lighting_info_texture_format{
 			.type = SDL_GPU_TEXTURETYPE_2D,
@@ -50,13 +51,13 @@ namespace app::render::target
 		};
 
 		// Depth Texture
-		graphic::Smart_texture depth_texture = {depth_texture_format};
+		graphics::Smart_texture depth_texture = {depth_texture_format};
 
 		// Albedo Texture, at location 0
-		graphic::Smart_texture albedo_texture = {albedo_texture_format};
+		graphics::Smart_texture albedo_texture = {albedo_texture_format};
 
 		// Lighting Info Texture, at location 1
-		graphic::Smart_texture lighting_info_texture = {lighting_info_texture_format};
+		graphics::Smart_texture lighting_info_texture = {lighting_info_texture_format};
 
 		// Resize all textures
 		std::expected<void, util::Error> resize(SDL_GPUDevice* device, glm::u32vec2 size) noexcept;

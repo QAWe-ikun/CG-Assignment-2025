@@ -47,9 +47,11 @@ namespace gltf
 	{
 		SDL_GPUBufferBinding vertex_buffer_binding;
 		SDL_GPUBufferBinding index_buffer_binding;
-		uint32_t index_count;
+		SDL_GPUBufferBinding position_only_vertex_buffer_binding;
+		SDL_GPUBufferBinding position_only_index_buffer_binding;
 		glm::vec3 position_min;
 		glm::vec3 position_max;
+		uint32_t index_count;
 	};
 
 	// Primitive Mesh Data for GPU
@@ -77,34 +79,49 @@ namespace gltf
 		) noexcept;
 
 		// Generate drawdata for this primitive
-		FORCE_INLINE Primitive_draw gen_drawdata(bool position_only) const noexcept
+		FORCE_INLINE Primitive_draw gen_drawdata() const noexcept
 		{
 			return Primitive_draw{
-				.vertex_buffer_binding =
-					{.buffer = position_only ? position_vertex_buffer : vertex_buffer, .offset = 0},
-				.index_buffer_binding =
-					{.buffer = position_only ? position_index_buffer : index_buffer,   .offset = 0},
-				.index_count = index_count,
+				.vertex_buffer_binding = {.buffer = vertex_buffer,          .offset = 0},
+				.index_buffer_binding = {.buffer = index_buffer,           .offset = 0},
+				.position_only_vertex_buffer_binding = {.buffer = position_vertex_buffer, .offset = 0},
+				.position_only_index_buffer_binding = {.buffer = position_index_buffer,  .offset = 0},
 				.position_min = position_min,
-				.position_max = position_max
+				.position_max = position_max,
+				.index_count = index_count,
 			};
 		}
 	};
 
+	// Mesh data on CPU side
 	struct Mesh
 	{
 		std::vector<Primitive> primitives;
 
+		///
+		/// @brief Parse a `tinygltf::Mesh` into a `Mesh`
+		///
+		/// @param model Tinygltf model
+		/// @param mesh Tinygltf mesh
+		/// @return Mesh on success, or error on failure
+		///
 		static std::expected<Mesh, util::Error> from_tinygltf(
 			const tinygltf::Model& model,
 			const tinygltf::Mesh& mesh
 		) noexcept;
 	};
 
+	// Mesh data on GPU side
 	struct Mesh_gpu
 	{
 		std::vector<Primitive_gpu> primitives;
 
+		///
+		/// @brief Upload a `Mesh` to GPU, creating `Mesh_gpu`
+		///
+		/// @param mesh CPU-side mesh
+		/// @return GPU-side mesh, or error on failure
+		///
 		static std::expected<Mesh_gpu, util::Error> from_mesh(
 			SDL_GPUDevice* device,
 			const Mesh& mesh

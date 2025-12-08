@@ -84,8 +84,10 @@ namespace image
 		auto map(this const auto& self, F func) noexcept
 		{
 			using Return_type = std::invoke_result_t<F, T>;
-			Image_container<Return_type>
-				result{.size = self.size, .pixels = std::vector<Return_type>(self.pixels.size())};
+			Image_container<Return_type> result{
+				.size = self.size,
+				.pixels = std::vector<Return_type>(self.pixels.size())
+			};
 
 			std::ranges::copy(self.pixels | std::views::transform(func), result.pixels.begin());
 
@@ -101,7 +103,7 @@ namespace image
 			requires detail::GLM_type<T>
 		{
 			using Comp = typename T::value_type;
-			constexpr glm::length_t len = T::length();
+			constexpr glm::length_t len = sizeof(T) / sizeof(Comp);
 
 			using Widened_comp = typename detail::Component_widen<Comp>::type;
 			using Wide_t = glm::vec<len, Widened_comp>;

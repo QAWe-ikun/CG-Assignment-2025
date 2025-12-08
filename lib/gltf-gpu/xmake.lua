@@ -22,6 +22,6 @@ target("gltf-gpu")
 		"image.algo", 
 		"image.compress", 
 		"gpu", 
-		"graphic.util",
+		"graphics.util",
 		{public=true}
 	)

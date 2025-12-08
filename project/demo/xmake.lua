@@ -28,10 +28,11 @@ target("demo")
         "lib::zip", 
         "lib::util", 
         "lib::backend", 
-        "lib::camera",
         "lib::image.io",
         "lib::image.compress",
         "lib::image.algo",
-        "lib::graphic.util",
-        "lib::graphic.aa"
+        "lib::graphics.aa",
+        "lib::graphics.camera",
+        "lib::graphics.geometry",
+        "lib::graphics.util"
     )

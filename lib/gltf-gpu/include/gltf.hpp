@@ -2,7 +2,6 @@
 
 #include <gltf/accessor.hpp>
 #include <gltf/image.hpp>
-#include <gltf/material-list.hpp>
 #include <gltf/material.hpp>
 #include <gltf/mesh.hpp>
 #include <gltf/model.hpp>

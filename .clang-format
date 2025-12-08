@@ -70,7 +70,7 @@ FixNamespaceComments: false
 
 # Penalties
 PenaltyBreakAssignment: 0
-PenaltyBreakBeforeMemberAccess: 1000
-PenaltyIndentedWhitespace: 30
+PenaltyBreakBeforeMemberAccess: 100
+PenaltyIndentedWhitespace: 10
 PenaltyBreakScopeResolution: 1000
 # Standard: auto

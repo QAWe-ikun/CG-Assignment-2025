@@ -1,0 +1,134 @@
+#include "graphics/util/quick-create.hpp"
+#include "graphics/util/quick-copy.hpp"
+
+#include <ranges>
+
+namespace graphics
+{
+	std::expected<gpu::Buffer, util::Error> create_buffer_from_data(
+		SDL_GPUDevice* device,
+		gpu::Buffer::Usage usage,
+		std::span<const std::byte> data
+	) noexcept
+	{
+		auto buffer = gpu::Buffer::create(device, usage, data.size());
+		if (!buffer) return buffer.error().propagate("Create buffer failed");
+
+		auto transfer_buffer = gpu::Transfer_buffer::create_from_data(device, data);
+		if (!transfer_buffer) return transfer_buffer.error().propagate("Create transfer buffer failed");
+
+		const auto copy_result = execute_copy_task(device, [&](const gpu::Copy_pass& copy_pass) {
+			copy_pass.upload_to_buffer(*transfer_buffer, 0, *buffer, 0, data.size(), false);
+		});
+
+		if (!copy_result) return copy_result.error().propagate("Execute copy task failed");
+
+		return buffer;
+	}
+
+	std::expected<gpu::Texture, util::Error> detail::create_texture_from_image_internal(
+		SDL_GPUDevice* device,
+		gpu::Texture::Format format,
+		Image_data image
+	) noexcept
+	{
+		auto texture = gpu::Texture::create(device, format.create(image.size.x, image.size.y, 1, 1));
+		if (!texture) return texture.error().propagate("Create texture failed");
+
+		auto transfer_buffer = gpu::Transfer_buffer::create_from_data(device, image.pixels);
+		if (!transfer_buffer) return transfer_buffer.error().propagate("Create transfer buffer failed");
+
+		const SDL_GPUTextureTransferInfo transfer_info{
+			.transfer_buffer = *transfer_buffer,
+			.offset = 0,
+			.pixels_per_row = image.size.x,
+			.rows_per_layer = image.size.y
+		};
+
+		const SDL_GPUTextureRegion texture_region{
+			.texture = *texture,
+			.mip_level = 0,
+			.layer = 0,
+			.x = 0,
+			.y = 0,
+			.z = 0,
+			.w = uint32_t(image.size.x),
+			.h = uint32_t(image.size.y),
+			.d = 1
+		};
+
+		const auto copy_task_result =
+			execute_copy_task(device, [&transfer_info, &texture_region](const auto& copy_pass) {
+				copy_pass.upload_to_texture(transfer_info, texture_region, false);
+			});
+		if (!copy_task_result) return copy_task_result.error().propagate("Execute copy task failed");
+
+		return texture;
+	}
+
+	std::expected<gpu::Texture, util::Error> detail::create_texture_from_mipmap_internal(
+		SDL_GPUDevice* device,
+		gpu::Texture::Format format,
+		std::span<const Image_data> mipmap_chain
+	) noexcept
+	{
+		auto texture = gpu::Texture::create(
+			device,
+			format.create(mipmap_chain[0].size.x, mipmap_chain[0].size.y, 1, mipmap_chain.size())
+		);
+		if (!texture) return texture.error().propagate("Create texture failed");
+
+		const auto transfer_buffers =
+			mipmap_chain
+			| std::views::transform([&](const Image_data& image) {
+				  return gpu::Transfer_buffer::create_from_data(device, image.pixels);
+			  })
+			| std::ranges::to<std::vector>();
+		for (const auto& buffer : transfer_buffers)
+			if (!buffer) return buffer.error().propagate("Create transfer buffer failed");
+
+		const auto transfer_infos =
+			mipmap_chain
+			| std::views::enumerate
+			| std::views::transform([&](const auto& indexed_image) {
+				  const auto& [mip_level, image] = indexed_image;
+				  return SDL_GPUTextureTransferInfo{
+					  .transfer_buffer = *transfer_buffers[mip_level],
+					  .offset = 0,
+					  .pixels_per_row = image.size.x,
+					  .rows_per_layer = image.size.y
+				  };
+			  })
+			| std::ranges::to<std::vector>();
+
+		const auto transfer_regions =
+			mipmap_chain
+			| std::views::enumerate
+			| std::views::transform([&](const auto& indexed_image) {
+				  const auto& [mip_level, image] = indexed_image;
+				  return SDL_GPUTextureRegion{
+					  .texture = *texture,
+					  .mip_level = uint32_t(mip_level),
+					  .layer = 0,
+					  .x = 0,
+					  .y = 0,
+					  .z = 0,
+					  .w = uint32_t(image.size.x),
+					  .h = uint32_t(image.size.y),
+					  .d = 1
+				  };
+			  })
+			| std::ranges::to<std::vector>();
+
+		const auto copy_task_result = execute_copy_task(device, [&](const auto& copy_pass) {
+			for (const auto [transfer_buffer, info, region] :
+				 std::views::zip(transfer_buffers, transfer_infos, transfer_regions))
+			{
+				copy_pass.upload_to_texture(info, region, false);
+			}
+		});
+		if (!copy_task_result) return copy_task_result.error().propagate("Execute copy task failed");
+
+		return texture;
+	}
+}

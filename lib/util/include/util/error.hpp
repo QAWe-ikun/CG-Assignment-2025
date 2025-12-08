@@ -62,7 +62,7 @@ namespace util
 		) const noexcept;
 
 		static std::function<util::Error(util::Error&&)> propagate_fn(
-			std::string message,
+			std::string message = "",
 			const std::source_location& location = std::source_location::current()
 		) noexcept;
 

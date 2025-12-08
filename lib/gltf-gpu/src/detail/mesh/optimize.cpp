@@ -81,13 +81,13 @@ namespace gltf::detail::mesh
 		auto position_only_vertices =
 			vertices | std::views::transform(&Vertex::position) | std::ranges::to<std::vector>();
 
-		std::vector<uint32_t> remap_table(vertices.size());
+		std::vector<uint32_t> remap_table(position_only_vertices.size());
 		const auto vertex_count = meshopt_generateVertexRemap(
 			remap_table.data(),
 			nullptr,
-			vertices.size(),
+			position_only_vertices.size(),
 			&position_only_vertices[0].x,
-			vertices.size(),
+			position_only_vertices.size(),
 			sizeof(glm::vec3)
 		);
 
@@ -96,12 +96,17 @@ namespace gltf::detail::mesh
 
 		meshopt_remapVertexBuffer(
 			remapped_vertices.data(),
-			vertices.data(),
-			vertices.size(),
+			position_only_vertices.data(),
+			position_only_vertices.size(),
 			sizeof(glm::vec3),
 			remap_table.data()
 		);
-		meshopt_remapIndexBuffer(remapped_indices.data(), nullptr, vertices.size(), remap_table.data());
+		meshopt_remapIndexBuffer(
+			remapped_indices.data(),
+			nullptr,
+			position_only_vertices.size(),
+			remap_table.data()
+		);
 
 		meshopt_optimizeVertexCache(
 			remapped_indices.data(),

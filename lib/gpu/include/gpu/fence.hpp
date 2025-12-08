@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL_gpu.h>
 #include <expected>
+#include <span>
 
 #include "resource-box.hpp"
 

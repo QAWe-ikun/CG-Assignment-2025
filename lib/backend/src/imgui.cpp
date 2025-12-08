@@ -45,6 +45,16 @@ namespace backend
 		return {};
 	}
 
+	static void set_imgui_style() noexcept
+	{
+		ImGui::StyleColorsDark();
+		ImGuiStyle& style = ImGui::GetStyle();
+		style.Colors[ImGuiCol_PlotHistogram] = style.Colors[ImGuiCol_ButtonHovered];
+		style.Colors[ImGuiCol_PlotLines] = style.Colors[ImGuiCol_ButtonHovered];
+		style.Colors[ImGuiCol_PlotHistogramHovered] = style.Colors[ImGuiCol_ButtonHovered];
+		style.Colors[ImGuiCol_PlotLinesHovered] = style.Colors[ImGuiCol_ButtonHovered];
+	}
+
 	struct ImGui_cleaner
 	{
 		~ImGui_cleaner() noexcept
@@ -72,7 +82,7 @@ namespace backend
 		if (!ImGui_ImplSDLGPU3_Init(&init_info))
 			return util::Error("Initialize IMGUI SDL-GPU3 backend failed");
 
-		ImGui::StyleColorsDark();
+		set_imgui_style();
 		if (const auto load_font_result = load_imgui_font(); !load_font_result)
 			return load_font_result.error().propagate("Load IMGUI font failed");
 

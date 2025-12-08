@@ -7,10 +7,11 @@
 
 namespace gltf
 {
+	// Sampler creation configuration
 	struct Sampler_config
 	{
-		float lod_bias = 0.0f;
-		std::optional<float> anisotropy = 4.0f;
+		float lod_bias = 0.0f;                   // LOD bias
+		std::optional<float> anisotropy = 4.0f;  // Max anisotropy, nullopt to disable anisotropic filtering
 	};
 
 	///

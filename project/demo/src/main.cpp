@@ -1,10 +1,12 @@
 #include <SDL3/SDL_events.h>
+#include <algorithm>
 #include <array>
 #include <future>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 #include <iostream>
+#include <limits>
 #include <print>
 
 #include "asset/shader/simple.frag.hpp"
@@ -12,20 +14,26 @@
 
 #include "config/general.hpp"
 #include "config/texture.hpp"
+#include "gltf/sampler.hpp"
+#include "render/aa.hpp"
 
 #include <backend/imgui.hpp>
 #include <backend/loop.hpp>
 #include <backend/sdl.hpp>
-#include <camera/projection/perspective.hpp>
-#include <camera/view/orbit.hpp>
 #include <gltf.hpp>
 #include <gpu.hpp>
-#include <graphic/aa/empty.hpp>
-#include <graphic/aa/fxaa.hpp>
-#include <graphic/aa/mlaa.hpp>
-#include <graphic/aa/smaa.hpp>
-#include <graphic/util/smart-texture.hpp>
-#include <graphic/util/tool.hpp>
+#include <graphics/aa/empty.hpp>
+#include <graphics/aa/fxaa.hpp>
+#include <graphics/aa/mlaa.hpp>
+#include <graphics/aa/smaa.hpp>
+#include <graphics/camera/projection/ortho.hpp>
+#include <graphics/camera/projection/perspective.hpp>
+#include <graphics/camera/view/orbit.hpp>
+#include <graphics/corner.hpp>
+#include <graphics/culling.hpp>
+#include <graphics/smallest-bound.hpp>
+#include <graphics/util/quick-create.hpp>
+#include <graphics/util/smart-texture.hpp>
 #include <image/algo/mipmap.hpp>
 #include <image/compress.hpp>
 #include <image/io.hpp>
@@ -81,7 +89,7 @@ static gpu::Graphics_pipeline create_pipeline(
 	rasterizer_state.depth_bias_constant_factor = 0;
 	rasterizer_state.depth_bias_slope_factor = 0;
 	rasterizer_state.enable_depth_bias = false;
-	rasterizer_state.enable_depth_clip = false;
+	rasterizer_state.enable_depth_clip = true;
 
 	const auto vertex_attributes = std::to_array<SDL_GPUVertexAttribute>({
 		SDL_GPUVertexAttribute{
@@ -237,8 +245,8 @@ static std::expected<gltf::Model, util::Error> create_scene_from_model(
 		return gltf::Model::load_model(
 			context.device,
 			*gltf_load_result,
-			{},
-			{.color_mode = gltf::Image_compress_mode::RGBA8_BC3,
+			gltf::Sampler_config{.anisotropy = 4.0f},
+			{.color_mode = gltf::Image_compress_mode::RGBA8_BC7,
 			 .normal_mode = gltf::Image_compress_mode::RGn_BC5},
 			std::ref(load_progress)
 		);
@@ -279,9 +287,16 @@ constexpr bool is_debug_build = false;
 constexpr bool is_debug_build = true;
 #endif
 
-int main()
+int main(int argc, const char** argv)
 try
 {
+	std::span<const char*> args(argv, argc);
+	if (args.size() != 2)
+	{
+		std::println("用法: {} <模型文件>", args[0]);
+		return EXIT_FAILURE;
+	}
+
 	/* 初始化 */
 
 	backend::initialize_sdl() | util::unwrap("初始化 SDL 失败");
@@ -303,12 +318,8 @@ try
 
 	/* 加载模型和贴图 */
 
-	std::println("模型路径:");
-	std::string model_path;
-	std::getline(std::cin, model_path);
-
 	const auto scene =
-		util::read_file(model_path, 1024 * 1048576)
+		util::read_file(args[1], 1024 * 1048576)
 			.and_then([&sdl_context](const std::vector<std::byte>& model) {
 				return create_scene_from_model(*sdl_context, model);
 			})
@@ -320,34 +331,23 @@ try
 	const auto graphics_pipeline = create_pipeline(gpu_device, window, vertex_shader, fragment_shader);
 	const auto sampler = create_sampler(gpu_device);
 
-	graphic::aa::FXAA fxaa_processor =
-		graphic::aa::FXAA::create(gpu_device, swapchain_format) | util::unwrap("创建 FXAA 处理器失败");
-	graphic::aa::MLAA mlaa_processor =
-		graphic::aa::MLAA::create(gpu_device, swapchain_format) | util::unwrap("创建 MLAA 处理器失败");
-	graphic::aa::SMAA smaa_processor =
-		graphic::aa::SMAA::create(gpu_device, swapchain_format) | util::unwrap("创建 SMAA 处理器失败");
-	graphic::aa::Empty empty_processor;
+	Antialias_module aa_module =
+		Antialias_module::create(gpu_device, swapchain_format) | util::unwrap("创建抗锯齿模块失败");
 
-	graphic::Smart_texture depth_texture(config::texture::depth_texture_format);
-	graphic::Smart_texture color_texture(config::texture::color_texture_format);
+	graphics::Smart_texture depth_texture(config::texture::depth_texture_format);
+	graphics::Smart_texture color_texture(config::texture::color_texture_format);
 
-	camera::view::Orbit camera_orbit(3, 0, 0, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	const camera::view::Orbit::Pan_controller pan_controller{0.5f};
-	const camera::view::Orbit::Rotate_controller rotate_controller{
+	graphics::camera::view::Orbit
+		camera_orbit(3, 0, 0, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	const graphics::camera::view::Orbit::Pan_controller pan_controller{0.5f};
+	const graphics::camera::view::Orbit::Rotate_controller rotate_controller{
 		.azimuth_per_width = glm::radians(360.0f),
 		.pitch_per_height = glm::radians(180.0f)
 	};
 
-	camera::projection::Perspective camera_projection(glm::radians(45.0f), 0.1f, std::nullopt);
+	graphics::camera::projection::Perspective camera_projection(glm::radians(45.0f), 0.1f, std::nullopt);
 
-	enum class AA_mode
-	{
-		None,
-		FXAA,
-		MLAA,
-		SMAA
-	};
-	AA_mode aa_mode = AA_mode::MLAA;
+	Antialias_module::Mode aa_mode = Antialias_module::Mode::MLAA;
 
 	/* 主循环 */
 
@@ -361,11 +361,64 @@ try
 			if (event.type == SDL_EVENT_QUIT) quit = true;
 		}
 
-		auto command_buffer = gpu::Command_buffer::acquire_from(gpu_device) | util::unwrap();
-		const auto [swapchain_texture, width, height] =
-			command_buffer.wait_and_acquire_swapchain_texture(window) | util::unwrap();
-
 		backend::imgui_new_frame();
+
+		const auto [width, height] = ImGui::GetIO().DisplaySize;
+
+		const auto begin_time = std::chrono::high_resolution_clock::now();
+
+		const glm::mat4 camera_matrix =
+			camera_projection.matrix_reverse_z(float(width) / float(height)) * camera_orbit.matrix();
+
+		const auto planes = graphics::compute_frustum_planes(camera_matrix);
+		auto [drawcalls, material_cache] = scene.generate_drawdata(glm::mat4(1.0f));
+
+		float min_z = std::numeric_limits<float>::max();
+
+		std::vector<gltf::Drawcall> visible_drawcalls;
+		visible_drawcalls.reserve(drawcalls.size());
+		for (const auto& drawcall : drawcalls)
+		{
+			const auto [world_min, world_max] = graphics::local_bound_to_world(
+				drawcall.primitive.position_min,
+				drawcall.primitive.position_max,
+				drawcall.transform
+			);
+
+			if (graphics::box_in_frustum(world_min, world_max, planes))
+			{
+				const auto projected_bound = graphics::transform_corner_points(
+					graphics::get_corner_points(world_min, world_max),
+					camera_matrix
+				);
+				const auto local_min_z = std::ranges::min(
+					projected_bound | std::views::transform(&glm::vec3::z) | std::views::filter([](float z) {
+						return z > 0.0;
+					})
+				);
+				min_z = std::min(min_z, local_min_z);
+
+				visible_drawcalls.push_back(drawcall);
+			}
+		}
+
+		std::ranges::sort(visible_drawcalls, [](const gltf::Drawcall& a, const gltf::Drawcall& b) {
+			return a.material_index.value_or(std::numeric_limits<uint32_t>::max())
+				< b.material_index.value_or(std::numeric_limits<uint32_t>::max());
+		});
+
+		const auto light_dir = glm::normalize(glm::vec3(0.0, 1.0, 0.0));
+		const auto corners = graphics::transform_corner_points(
+			graphics::get_corner_points(glm::vec3(-1.0, -1.0, min_z), glm::vec3(1.0)),
+			glm::inverse(camera_matrix)
+		);
+		const auto bounds = graphics::find_smallest_bound(corners, light_dir);
+		const auto mat = glm::ortho(bounds.left, bounds.right, bounds.bottom, bounds.top, -10.0f, 10.0f);
+
+		const auto end_time = std::chrono::high_resolution_clock::now();
+		const auto load_duration = end_time - begin_time;
+		const double load_ms =
+			std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(load_duration).count();
 
 		if (!ImGui::GetIO().WantCaptureMouse)
 		{
@@ -386,28 +439,46 @@ try
 
 		if (ImGui::Begin("设置", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
-			if (ImGui::RadioButton("无抗锯齿", aa_mode == AA_mode::None)) aa_mode = AA_mode::None;
-			if (ImGui::RadioButton("FXAA", aa_mode == AA_mode::FXAA)) aa_mode = AA_mode::FXAA;
-			if (ImGui::RadioButton("MLAA", aa_mode == AA_mode::MLAA)) aa_mode = AA_mode::MLAA;
-			if (ImGui::RadioButton("SMAA", aa_mode == AA_mode::SMAA)) aa_mode = AA_mode::SMAA;
+			if (ImGui::RadioButton("无抗锯齿", aa_mode == Antialias_module::Mode::None))
+				aa_mode = Antialias_module::Mode::None;
+			if (ImGui::RadioButton("FXAA", aa_mode == Antialias_module::Mode::FXAA))
+				aa_mode = Antialias_module::Mode::FXAA;
+			if (ImGui::RadioButton("MLAA", aa_mode == Antialias_module::Mode::MLAA))
+				aa_mode = Antialias_module::Mode::MLAA;
+			if (ImGui::RadioButton("SMAA", aa_mode == Antialias_module::Mode::SMAA))
+				aa_mode = Antialias_module::Mode::SMAA;
+
+			ImGui::Separator();
+
+			ImGui::Text("Drawdata Gen: %.2f ms", load_ms);
+			ImGui::Text("Drawcall count: %zu", visible_drawcalls.size());
+
+			const auto tri_count = std::ranges::fold_left(
+				visible_drawcalls,
+				size_t(0),
+				[](size_t acc, const gltf::Drawcall& drawcall) {
+					return acc + (drawcall.primitive.index_count / 3);
+				}
+			);
+			ImGui::Text("Triangle count: %zu", tri_count);
+			ImGui::Text("Smallest Z: %.4f", min_z);
 		}
 		ImGui::End();
 
-		const auto drawcalls = scene.generate_drawdata(glm::mat4(1.0f));
+		auto command_buffer = gpu::Command_buffer::acquire_from(gpu_device) | util::unwrap();
+		const auto [swapchain_texture, swapchain_width, swapchain_height] =
+			command_buffer.wait_and_acquire_swapchain_texture(window) | util::unwrap();
 
 		backend::imgui_upload_data(command_buffer);
 
 		// 渲染
 		if (swapchain_texture != nullptr)
 		{
-			depth_texture.resize(gpu_device, {width, height}) | util::unwrap();
-			color_texture.resize(gpu_device, {width, height}) | util::unwrap();
+			depth_texture.resize(gpu_device, {swapchain_width, swapchain_height}) | util::unwrap();
+			color_texture.resize(gpu_device, {swapchain_width, swapchain_height}) | util::unwrap();
 
 			const auto [color_target, depth_target] = gen_color_target_info(*color_texture, *depth_texture);
 			const auto swapchain_color_target = gen_swapchain_target_info(swapchain_texture);
-
-			const glm::mat4 camera_matrix =
-				camera_projection.matrix_reverse_z(float(width) / float(height)) * camera_orbit.matrix();
 
 			command_buffer.run_render_pass(
 				{&color_target, 1},
@@ -417,8 +488,8 @@ try
 						SDL_GPUViewport{
 							.x = 0,
 							.y = 0,
-							.w = float(width),
-							.h = float(height),
+							.w = float(swapchain_width),
+							.h = float(swapchain_height),
 							.min_depth = 0.0f,
 							.max_depth = 1.0f
 						}
@@ -426,46 +497,43 @@ try
 
 					render_pass.bind_pipeline(graphics_pipeline);
 
-					for (const auto& drawcall : drawcalls)
+					for (const auto subrange :
+						 visible_drawcalls
+							 | std::views::chunk_by([](const gltf::Drawcall& a, const gltf::Drawcall& b) {
+								   return a.material_index == b.material_index;
+							   }))
 					{
-						const glm::mat4 model_matrix = drawcall.world_matrix;
-						const glm::mat4 mvp_matrix = camera_matrix * model_matrix;
-						command_buffer.push_uniform_to_vertex(0, &mvp_matrix, sizeof(glm::mat4));
+						if (subrange.empty()) continue;
+						const auto material_bind =
+							material_cache.get_material_bind(subrange.front().material_index);
 
-						render_pass.bind_vertex_buffers(0, {&drawcall.primitive.vertex_buffer_binding, 1});
-						render_pass.bind_index_buffer(
-							drawcall.primitive.index_buffer_binding,
-							SDL_GPU_INDEXELEMENTSIZE_32BIT
-						);
-						render_pass.bind_fragment_samplers(0, {&drawcall.material.base_color, 1});
-						render_pass.draw_indexed(drawcall.primitive.index_count, 0, 1, 0, 0);
+						render_pass.bind_fragment_samplers(0, {&material_bind.base_color, 1});
+
+						for (const auto& drawcall : subrange)
+						{
+							const glm::mat4 model_matrix = drawcall.transform;
+							const glm::mat4 MVP = camera_matrix * model_matrix;
+							command_buffer.push_uniform_to_vertex(0, util::as_bytes(MVP));
+
+							render_pass
+								.bind_vertex_buffers(0, {&drawcall.primitive.vertex_buffer_binding, 1});
+							render_pass.bind_index_buffer(
+								drawcall.primitive.index_buffer_binding,
+								SDL_GPU_INDEXELEMENTSIZE_32BIT
+							);
+							render_pass.draw_indexed(drawcall.primitive.index_count, 0, 1, 0, 0);
+						}
 					}
 				}
 			) | util::unwrap();
 
-			graphic::aa::Processor* processor = nullptr;
-			switch (aa_mode)
-			{
-			case AA_mode::None:
-				processor = &empty_processor;
-				break;
-			case AA_mode::FXAA:
-				processor = &fxaa_processor;
-				break;
-			case AA_mode::MLAA:
-				processor = &mlaa_processor;
-				break;
-			case AA_mode::SMAA:
-				processor = &smaa_processor;
-				break;
-			}
-
-			processor->run_antialiasing(
+			aa_module.run_antialiasing(
 				gpu_device,
 				command_buffer,
 				*color_texture,
 				swapchain_texture,
-				{width, height}
+				{swapchain_width, swapchain_height},
+				aa_mode
 			) | util::unwrap();
 
 			command_buffer.run_render_pass(

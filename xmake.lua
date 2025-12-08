@@ -7,7 +7,6 @@ set_encodings("utf-8")
 set_warnings("all", "pedantic")
 set_languages("c++23")
 
-add_cxflags("-ffunction-sections", "-fdata-sections")
 add_vectorexts("sse", "sse2", "avx", "avx2")
 
 if is_plat("linux") then
@@ -15,12 +14,12 @@ if is_plat("linux") then
 end
 
 includes("xmake/rule", "xmake/task/*.lua")
-add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_ENABLE_EXPERIMENTAL")
+add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_ENABLE_EXPERIMENTAL", "GLM_FORCE_INTRINSICS")
 add_defines("TINYGLTF_NOEXCEPTION")
 
 add_requires(
 	"libsdl3 3.2.22",
-	"glm 1.0.1",
+	"glm 1.0.2",
 	"gzip-hpp v0.1.0",
 	"stb 2025.03.14",
 	"tinygltf v2.9.6",

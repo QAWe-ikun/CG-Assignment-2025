@@ -10,7 +10,7 @@
 namespace gpu
 {
 	///
-	/// @brief Graphic Shader Object
+	/// @brief graphics Shader Object
 	///
 	///
 	class Graphic_shader : public Resource_box<SDL_GPUShader>
@@ -30,7 +30,7 @@ namespace gpu
 		};
 
 		///
-		/// @brief Creates a graphic shader
+		/// @brief Creates a graphics shader
 		///
 		static std::expected<Graphic_shader, util::Error> create(
 			SDL_GPUDevice* device,
@@ -48,7 +48,7 @@ namespace gpu
 	};
 
 	///
-	/// @brief GPU Graphic Pipeline
+	/// @brief GPU graphics Pipeline
 	///
 	///
 	class Graphics_pipeline : public Resource_box<SDL_GPUGraphicsPipeline>
