@@ -67,15 +67,24 @@ namespace gpu
 		///
 		struct Depth_stencil_state
 		{
+			static constexpr SDL_GPUStencilOpState default_stencil_op_state = {
+				.fail_op = SDL_GPU_STENCILOP_KEEP,
+				.pass_op = SDL_GPU_STENCILOP_KEEP,
+				.depth_fail_op = SDL_GPU_STENCILOP_KEEP,
+				.compare_op = SDL_GPU_COMPAREOP_ALWAYS
+			};
+
 			SDL_GPUTextureFormat format;
 			SDL_GPUCompareOp compare_op;
-			SDL_GPUStencilOpState back_stencil_state;
-			SDL_GPUStencilOpState front_stencil_state;
+			SDL_GPUStencilOpState back_stencil_state = default_stencil_op_state;
+			SDL_GPUStencilOpState front_stencil_state = default_stencil_op_state;
 			Uint8 compare_mask;
 			Uint8 write_mask;
 			bool enable_depth_test;
 			bool enable_depth_write;
 			bool enable_stencil_test;
+
+			SDL_GPUDepthStencilState to_sdl(this const Depth_stencil_state& self) noexcept;
 		};
 
 		///

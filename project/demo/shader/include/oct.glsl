@@ -1,19 +1,28 @@
-vec2 normalToOct(vec3 normal)
+precision highp float;
+
+vec2 normalToOct(vec3 n)
 {
-    vec3 normalized = normal / (abs(normal.x) + abs(normal.y) + abs(normal.z));
-    return normal.y >= 0.0 ? normalized.xz : vec2(
-        sign(normalized.x) * (1.0 - abs(normalized.x)),
-        sign(normalized.z) * (1.0 - abs(normalized.z))
-    )
+    // project the normal onto the octahedron
+    n = n / (abs(n.x) + abs(n.y) + abs(n.z));
+
+    vec2 enc = n.xy; // store x and y components
+
+    // reflect the folds of the lower hemisphere onto the upper one
+    if (n.z < 0.0)
+    {
+        enc = (1.0 - abs(enc.yx)) * sign(enc);
+    }
+
+    return enc;
 }
 
-vec3 octToNormal(vec2 oct)
+vec3 octToNormal(vec2 e)
 {
-    vec3 normal = vec3(oct.x, oct.y, 1.0 - abs(oct.x) - abs(oct.y));
-    if (normal.z < 0.0)
+    // reconstruct z and then unfold if it was folded
+    vec3 n = vec3(e.x, e.y, 1.0 - abs(e.x) - abs(e.y));
+    if (n.z < 0.0)
     {
-        normal.x = (1.0 - abs(normal.y)) * sign(normal.x);
-        normal.y = (1.0 - abs(normal.x)) * sign(normal.y);
+        n.xy = (1.0 - abs(n.yx)) * sign(n.xy);
     }
-    return normalize(normal);
+    return normalize(n);
 }

@@ -1,4 +1,3 @@
--- Backends, including SDL Window, SDL Device and ImGui integration
 target("backend")
 	set_kind("static")
 	set_languages("c++23", {public=true})

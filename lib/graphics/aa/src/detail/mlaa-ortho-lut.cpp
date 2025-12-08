@@ -1,8 +1,8 @@
 #include "graphics/aa/detail/mlaa-ortho-lut.hpp"
 
+#include "graphics/util/quick-create.hpp"
 #include <algorithm>
 #include <array>
-#include <graphics/util/quick-create.hpp>
 #include <ranges>
 
 namespace graphics::aa

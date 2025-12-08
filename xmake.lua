@@ -18,7 +18,7 @@ add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_ENABLE_EXPERIMENTAL", "GLM_FORCE
 add_defines("TINYGLTF_NOEXCEPTION")
 
 add_requires(
-	"libsdl3 3.2.22",
+	"libsdl3 3.2.26",
 	"glm 1.0.2",
 	"gzip-hpp v0.1.0",
 	"stb 2025.03.14",
@@ -26,6 +26,10 @@ add_requires(
 	"meshoptimizer v0.25",
 	"paul_thread_pool 0.7.0"
 )
-add_requires("imgui v1.92.1-docking", {configs={sdl3=true, sdl3_gpu=true, wchar32=true}})
+add_requires(
+	"imgui v1.92.1-docking", 
+	{configs={sdl3=true, sdl3_gpu=true, wchar32=true}}
+)
+add_requireconfs("imgui.libsdl3", {override=true, version="3.2.26"})
 
 includes("project", "lib")

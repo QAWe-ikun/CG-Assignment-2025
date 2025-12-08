@@ -88,7 +88,7 @@ def main():
                 "#include <cstdint>",
                 "#include <span>",
                 namespace_heading,
-                f"    static const std::array<uint8_t, {binary_size}> {varname}_array = {{ {binary_string} }};",
+                f"    static const uint8_t {varname}_array[{binary_size}] = {{ {binary_string} }};",
                 f"    extern const std::span<const std::byte> {varname} = std::as_bytes(std::span({varname}_array));",
                 namespace_trailing,
             ]

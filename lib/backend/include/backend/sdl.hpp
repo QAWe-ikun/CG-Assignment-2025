@@ -1,3 +1,9 @@
+///
+/// @file sdl.hpp
+/// @brief Provide SDL initialization and context management class
+///
+///
+
 #pragma once
 
 #include <SDL3/SDL_gpu.h>
@@ -5,24 +11,30 @@
 #include <expected>
 #include <glm/ext/vector_uint2_sized.hpp>
 #include <memory>
-#include <util/error.hpp>
+
+#include "util/error.hpp"
 
 namespace backend
 {
 	///
 	/// @brief Initialize SDL Library
+	/// @note Call this function before using any SDL functionality.
 	///
 	std::expected<void, util::Error> initialize_sdl();
 
 	///
-	/// @brief SDL Context, holding SDL Window and GPU Device
+	/// @brief SDL Context, holds SDL Window and GPU Device and provides helper functions
 	///
 	///
 	class SDL_context
 	{
 	  public:
 
-		SDL_context(SDL_Window* window, SDL_GPUDevice* device) noexcept;
+		SDL_context(SDL_Window* window, SDL_GPUDevice* device) noexcept :
+			window(window),
+			device(device)
+		{}
+
 		~SDL_context() noexcept = default;
 
 		SDL_context(const SDL_context&) = delete;
@@ -35,6 +47,7 @@ namespace backend
 
 		///
 		/// @brief Create SDL Context with Window and GPU Device
+		/// @note Call `initialize_sdl` before calling this function.
 		///
 		/// @param width Window width
 		/// @param height Window height

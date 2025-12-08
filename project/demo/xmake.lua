@@ -24,7 +24,7 @@ target("demo")
     -- 子功能库
     add_deps(
         "lib::gpu", 
-        "lib::gltf-gpu", 
+        "lib::gltf", 
         "lib::zip", 
         "lib::util", 
         "lib::backend", 

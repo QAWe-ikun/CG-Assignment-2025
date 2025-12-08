@@ -1,3 +1,8 @@
+///
+/// @file empty.hpp
+/// @brief Defines an empty antialiasing processor that performs no antialiasing, only copying
+///
+
 #pragma once
 
 #include "base.hpp"

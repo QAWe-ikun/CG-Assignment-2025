@@ -11,7 +11,6 @@ namespace zip
 		size_t max_size
 	) noexcept
 	{
-
 		try
 		{
 			std::vector<std::byte> decompressed_data;
@@ -19,11 +18,8 @@ namespace zip
 
 			const gzip::Decompressor decompressor(max_size);
 
-			decompressor.decompress(
-				decompressed_data,
-				reinterpret_cast<const char*>(data.data()),
-				data.size()
-			);
+			decompressor
+				.decompress(decompressed_data, reinterpret_cast<const char*>(data.data()), data.size());
 
 			return decompressed_data;
 		}
@@ -32,10 +28,6 @@ namespace zip
 			return util::Error(std::format("Decompress failed: {}", e.what()));
 		}
 	}
-
-	Decompress::Decompress(size_t max_size) :
-		max_size(max_size)
-	{}
 
 	std::expected<std::vector<std::byte>, util::Error> Decompress::operator()(
 		std::span<const std::byte> data

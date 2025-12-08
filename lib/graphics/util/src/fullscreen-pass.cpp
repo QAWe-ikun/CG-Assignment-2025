@@ -2,8 +2,9 @@
 #include "asset/shader/fullscreen.vert.hpp"
 #include "graphics/util/quick-copy.hpp"
 
+#include "util/as-byte.hpp"
+#include <SDL3/SDL_gpu.h>
 #include <glm/glm.hpp>
-#include <util/as-byte.hpp>
 
 namespace graphics
 {
@@ -49,11 +50,11 @@ namespace graphics
 				{.vertex = true},
 				sizeof(glm::vec2) * fullscreen_triangle_vertices.size()
 			);
-			if (!vertex_buffer) return vertex_buffer.error().propagate("Create vertex buffer failed");
+			if (!vertex_buffer) return vertex_buffer.error().forward("Create vertex buffer failed");
 
 			auto transfer_buffer =
 				gpu::Transfer_buffer::create_from_data(device, util::as_bytes(fullscreen_triangle_vertices));
-			if (!transfer_buffer) return transfer_buffer.error().propagate("Create transfer buffer failed");
+			if (!transfer_buffer) return transfer_buffer.error().forward("Create transfer buffer failed");
 
 			const auto copy_result = execute_copy_task(device, [&](const gpu::Copy_pass& copy_pass) {
 				copy_pass.upload_to_buffer(
@@ -65,15 +66,60 @@ namespace graphics
 					false
 				);
 			});
-			if (!copy_result) return copy_result.error().propagate("Upload vertex data failed");
+			if (!copy_result) return copy_result.error().forward("Upload vertex data failed");
 
 			return vertex_buffer;
+		}
+
+		SDL_GPUColorTargetBlendState color_target_blend_state_by_mode(Fullscreen_blend_mode mode) noexcept
+		{
+			switch (mode)
+			{
+			case Fullscreen_blend_mode::Overwrite:
+				return {
+					.src_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+					.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ZERO,
+					.color_blend_op = SDL_GPU_BLENDOP_ADD,
+					.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+					.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ZERO,
+					.alpha_blend_op = SDL_GPU_BLENDOP_ADD,
+					.color_write_mask = SDL_GPU_COLORCOMPONENT_R
+						| SDL_GPU_COLORCOMPONENT_G
+						| SDL_GPU_COLORCOMPONENT_B
+						| SDL_GPU_COLORCOMPONENT_A,
+					.enable_blend = false,
+					.enable_color_write_mask = true,
+					.padding1 = 0,
+					.padding2 = 0
+				};
+			case Fullscreen_blend_mode::Add:
+				return {
+					.src_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+					.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+					.color_blend_op = SDL_GPU_BLENDOP_ADD,
+					.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+					.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+					.alpha_blend_op = SDL_GPU_BLENDOP_ADD,
+					.color_write_mask = SDL_GPU_COLORCOMPONENT_R
+						| SDL_GPU_COLORCOMPONENT_G
+						| SDL_GPU_COLORCOMPONENT_B
+						| SDL_GPU_COLORCOMPONENT_A,
+					.enable_blend = true,
+					.enable_color_write_mask = true,
+					.padding1 = 0,
+					.padding2 = 0
+				};
+			default:
+				std::unreachable();
+			}
 		}
 
 		std::expected<gpu::Graphics_pipeline, util::Error> create_fullscreen_pass(
 			SDL_GPUDevice* device,
 			const gpu::Graphic_shader& fragment,
-			gpu::Texture::Format target_format
+			gpu::Texture::Format target_format,
+			Fullscreen_blend_mode blend_mode,
+			std::optional<Fullscreen_stencil_state> stencil_state
 		) noexcept
 		{
 			if (target_format.type != SDL_GPU_TEXTURETYPE_2D
@@ -84,23 +130,7 @@ namespace graphics
 				return util::Error("Target format should support color target usage");
 
 			const std::array color_target_descs = std::to_array<SDL_GPUColorTargetDescription>({
-				{.format = target_format.format,
-				 .blend_state = {
-					 .src_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
-					 .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ZERO,
-					 .color_blend_op = SDL_GPU_BLENDOP_ADD,
-					 .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
-					 .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ZERO,
-					 .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
-					 .color_write_mask = SDL_GPU_COLORCOMPONENT_R
-						 | SDL_GPU_COLORCOMPONENT_G
-						 | SDL_GPU_COLORCOMPONENT_B
-						 | SDL_GPU_COLORCOMPONENT_A,
-					 .enable_blend = false,
-					 .enable_color_write_mask = false,
-					 .padding1 = 0,
-					 .padding2 = 0
-				 }}
+				{.format = target_format.format, .blend_state = color_target_blend_state_by_mode(blend_mode)}
 			});
 
 			auto vertex_shader = gpu::Graphic_shader::create(
@@ -112,7 +142,7 @@ namespace graphics
 				0,
 				0
 			);
-			if (!vertex_shader) return vertex_shader.error().propagate("Create vertex shader failed");
+			if (!vertex_shader) return vertex_shader.error().forward("Create vertex shader failed");
 
 			auto create_pipeline_result = gpu::Graphics_pipeline::create(
 				device,
@@ -124,46 +154,106 @@ namespace graphics
 				vertex_attributes,
 				vertex_buffer_descs,
 				color_target_descs,
-				std::nullopt
+				stencil_state.transform([](const auto& state) { return state.to_depth_stencil_state(); })
 			);
 			if (!create_pipeline_result)
-				return create_pipeline_result.error().propagate("Create pipeline failed");
+				return create_pipeline_result.error().forward("Create pipeline failed");
 
 			return std::move(create_pipeline_result.value());
 		}
 
 	}  // namespace
 
-	Fullscreen_pass::Fullscreen_pass(
-		gpu::Graphics_pipeline pipeline,
-		gpu::Buffer vertex_buffer,
-		Config config
-	) noexcept :
-		fullscreen_vertex_buffer(std::move(vertex_buffer)),
-		pipeline(std::move(pipeline)),
-		config(config)
-	{}
+	gpu::Graphics_pipeline::Depth_stencil_state
+	Fullscreen_stencil_state::to_depth_stencil_state() const noexcept
+	{
+		const auto stencil_op_state = SDL_GPUStencilOpState{
+			.fail_op = SDL_GPU_STENCILOP_KEEP,
+			.pass_op = SDL_GPU_STENCILOP_KEEP,
+			.depth_fail_op = SDL_GPU_STENCILOP_KEEP,
+			.compare_op = compare_op
+		};
 
-	std::expected<Fullscreen_pass, util::Error> Fullscreen_pass::create(
+		return gpu::Graphics_pipeline::Depth_stencil_state{
+			.format = depth_format,
+			.compare_op = SDL_GPU_COMPAREOP_ALWAYS,
+			.back_stencil_state = stencil_op_state,
+			.front_stencil_state = stencil_op_state,
+			.compare_mask = compare_mask,
+			.write_mask = write_mask,
+			.enable_depth_test = false,
+			.enable_depth_write = false,
+			.enable_stencil_test = true
+		};
+	}
+
+	void Fullscreen_pass<false>::render_to_renderpass(
+		const gpu::Render_pass& render_pass,
+		std::optional<std::span<const SDL_GPUTextureSamplerBinding>> samplers,
+		std::optional<std::span<SDL_GPUTexture* const>> storage_textures,
+		std::optional<std::span<SDL_GPUBuffer* const>> storage_buffers
+	) noexcept
+	{
+		render_pass.bind_pipeline(pipeline);
+
+		render_pass
+			.bind_vertex_buffers(0, SDL_GPUBufferBinding{.buffer = fullscreen_vertex_buffer, .offset = 0});
+
+		if (samplers.has_value()) render_pass.bind_fragment_samplers(0, samplers.value());
+		if (storage_textures.has_value())
+			render_pass.bind_fragment_storage_textures(0, storage_textures.value());
+		if (storage_buffers.has_value())
+			render_pass.bind_fragment_storage_buffers(0, storage_buffers.value());
+		if (stencil_ref.has_value()) render_pass.set_stencil_reference(*stencil_ref);
+
+		render_pass.draw(4, 0, 1, 0);
+	}
+
+	std::expected<Fullscreen_pass<false>, util::Error> Fullscreen_pass<false>::create(
+		SDL_GPUDevice* device,
+		const gpu::Graphic_shader& fragment,
+		gpu::Texture::Format target_format,
+		Fullscreen_blend_mode mode,
+		std::optional<Fullscreen_stencil_state> stencil_state
+	) noexcept
+	{
+		auto create_vertex_buffer_result = create_fullscreen_vertex_buffer(device);
+		if (!create_vertex_buffer_result)
+			return create_vertex_buffer_result.error().forward("Create vertex buffer failed");
+		auto vertex_buffer = std::move(create_vertex_buffer_result.value());
+
+		auto create_pipeline_result =
+			create_fullscreen_pass(device, fragment, target_format, mode, stencil_state);
+		if (!create_pipeline_result) return create_pipeline_result.error().forward("Create pipeline failed");
+		auto pipeline = std::move(create_pipeline_result.value());
+
+		return Fullscreen_pass<false>(
+			std::move(pipeline),
+			std::move(vertex_buffer),
+			stencil_state.transform([](const auto& state) { return state.reference; })
+		);
+	}
+
+	std::expected<Fullscreen_pass<true>, util::Error> Fullscreen_pass<true>::create(
 		SDL_GPUDevice* device,
 		const gpu::Graphic_shader& fragment,
 		gpu::Texture::Format target_format,
 		Config config
 	) noexcept
 	{
-		auto create_vertex_buffer_result = create_fullscreen_vertex_buffer(device);
-		if (!create_vertex_buffer_result)
-			return create_vertex_buffer_result.error().propagate("创建顶点缓冲区失败");
-		auto vertex_buffer = std::move(create_vertex_buffer_result.value());
+		auto create_base_pass = Fullscreen_pass<false>::create(
+			device,
+			fragment,
+			target_format,
+			config.blend_mode,
+			config.stencil_state
+		);
+		if (!create_base_pass) return create_base_pass.error().forward("Create base fullscreen pass failed");
 
-		auto create_pipeline_result = create_fullscreen_pass(device, fragment, target_format);
-		if (!create_pipeline_result) return create_pipeline_result.error().propagate("创建管线失败");
-		auto pipeline = std::move(create_pipeline_result.value());
-
-		return Fullscreen_pass(std::move(pipeline), std::move(vertex_buffer), config);
+		return Fullscreen_pass<true>(std::move(*create_base_pass), config);
 	}
 
-	std::expected<void, util::Error> Fullscreen_pass::render(
+	std::expected<void, util::Error> Fullscreen_pass<true>::render(
 		const gpu::Command_buffer& command_buffer,
 		SDL_GPUTexture* target_texture,
 		std::optional<std::span<const SDL_GPUTextureSamplerBinding>> samplers,
@@ -171,10 +261,6 @@ namespace graphics
 		std::optional<std::span<SDL_GPUBuffer* const>> storage_buffers
 	) noexcept
 	{
-		const auto vertex_buffer_bindings = std::to_array<SDL_GPUBufferBinding>({
-			{.buffer = fullscreen_vertex_buffer, .offset = 0}
-		});
-
 		const auto color_target_info = std::to_array<SDL_GPUColorTargetInfo>({
 			{.texture = target_texture,
 			 .mip_level = 0,
@@ -195,23 +281,14 @@ namespace graphics
 			 .padding2 = 0}
 		});
 
-		const auto render_result =
-			command_buffer
-				.run_render_pass(color_target_info, std::nullopt, [&](const gpu::Render_pass& render_pass) {
-					render_pass.bind_pipeline(pipeline);
-
-					render_pass.bind_vertex_buffers(0, vertex_buffer_bindings);
-
-					if (samplers.has_value()) render_pass.bind_fragment_samplers(0, samplers.value());
-					if (storage_textures.has_value())
-						render_pass.bind_fragment_storage_textures(0, storage_textures.value());
-					if (storage_buffers.has_value())
-						render_pass.bind_fragment_storage_buffers(0, storage_buffers.value());
-
-					render_pass.draw(4, 0, 1, 0);
-				});
+		const auto render_result = command_buffer.run_render_pass(
+			color_target_info,
+			std::nullopt,
+			[&, this](const gpu::Render_pass& render_pass) {
+				base_pass.render_to_renderpass(render_pass, samplers, storage_textures, storage_buffers);
+			}
+		);
 
 		return render_result;
 	}
-
 }

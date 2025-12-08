@@ -38,9 +38,16 @@ function _prepare(target, source_path, opt)
 
 	local source_name = path.filename(source_path) 								
 	local header_output_path = path.join(paths.header, source_name .. ".hpp") 	
+	local includedir = target:extraconf("rules", "asset.shader", "includedir") or nil
 
 	local namespace = "shader_asset"
 	local varname = string.gsub(source_name, "[%.%-]", "_")
+
+	local depend_targets = {source_path}
+	local includedir_files = includedir and os.files(path.join(target:scriptdir(), includedir, "**")) or {}
+	for _, f in ipairs(includedir_files) do
+		table.insert(depend_targets, f)
+	end
 
 	-- Generate header file
 
@@ -54,7 +61,7 @@ function _prepare(target, source_path, opt)
 			"--varname", varname
 		})
 	end,{
-		files = source_path,
+		files = depend_targets,
 		dependfile = target:dependfile(source_path),
 		lastmtime = os.mtime(header_output_path),
 		changed = target:is_rebuilt() or not os.exists(header_output_path)
@@ -76,16 +83,19 @@ function _build(target, source_path, opt)
 
 	local tools = {
 		glsl_compiler = find_tool("glslangValidator") or find_tool("glslc"),
+		spirv_opt = find_tool("spirv-opt"),
 		python = find_tool("python3") or find_tool("python")
 	}
 
 	assert(tools.glsl_compiler, "GLSL compiler not found")
+	assert(tools.spirv_opt, "spirv-opt not found")
 	assert(tools.python, "Python not found")
 
 	-- Find directories
 
 	local source_name = path.filename(source_path) 								
 	local spv_temp_path = path.join(paths.temp, source_name .. ".spv") 			
+	local unopt_spv_temp_path = path.join(paths.temp, source_name .. ".unopt.spv")
 	local cpp_temp_path = path.join(paths.temp, source_name .. ".cpp") 			
 	local object_output_path = target:objectfile(cpp_temp_path) 				
 	local header_output_path = path.join(paths.header, source_name .. ".hpp") 	
@@ -104,7 +114,7 @@ function _build(target, source_path, opt)
 
 		-- Compile shader into SPIR-V
 
-		if debug then -- Debug info enabled
+		if debug then 
 			os.vrunv(tools.glsl_compiler.program, 
 				{
 					"--target-env", targetenv, 
@@ -114,13 +124,23 @@ function _build(target, source_path, opt)
 					source_path
 				}
 			)
-		else -- Debug info disabled
+		else 
 			os.vrunv(tools.glsl_compiler.program, 
 				{
 					"--target-env", targetenv, 
 					includedir and format("-I%s", path.join(target:scriptdir(), includedir)) or "-I.",
-					"-o", spv_temp_path, 
+					"-o", unopt_spv_temp_path, 
 					source_path
+				}
+			)
+
+			os.vrunv(tools.spirv_opt.program, 
+				{
+					"-O", 
+					"--local-redundancy-elimination",
+					"--loop-invariant-code-motion",
+					unopt_spv_temp_path, 
+					"-o", spv_temp_path
 				}
 			)
 		end

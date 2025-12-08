@@ -12,7 +12,7 @@ namespace graphics::aa
 		.address_mode_w = gpu::Sampler::Address_mode::Clamp_to_edge
 	};
 
-	FXAA::FXAA(Fullscreen_pass fxaa_pass, gpu::Sampler sampler) noexcept :
+	FXAA::FXAA(Fullscreen_pass<true> fxaa_pass, gpu::Sampler sampler) noexcept :
 		sampler(std::move(sampler)),
 		fxaa_pass(std::move(fxaa_pass))
 	{}
@@ -20,7 +20,7 @@ namespace graphics::aa
 	std::expected<FXAA, util::Error> FXAA::create(SDL_GPUDevice* device, SDL_GPUTextureFormat format) noexcept
 	{
 		const auto shader_to_pass = [device, format](gpu::Graphic_shader fragment_shader) {
-			return graphics::Fullscreen_pass::create(
+			return graphics::Fullscreen_pass<true>::create(
 				device,
 				fragment_shader,
 				gpu::Texture::Format{
@@ -43,10 +43,10 @@ namespace graphics::aa
 				0
 			)
 				.and_then(shader_to_pass);
-		if (!fullscreen_pass) return fullscreen_pass.error().propagate("Create FXAA fullscreen pass failed");
+		if (!fullscreen_pass) return fullscreen_pass.error().forward("Create FXAA fullscreen pass failed");
 
 		auto sampler = gpu::Sampler::create(device, sampler_info);
-		if (!sampler) return sampler.error().propagate("Create FXAA sampler failed");
+		if (!sampler) return sampler.error().forward("Create FXAA sampler failed");
 
 		return FXAA(std::move(*fullscreen_pass), std::move(*sampler));
 	}

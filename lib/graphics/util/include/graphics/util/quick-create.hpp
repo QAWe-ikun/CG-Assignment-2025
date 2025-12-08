@@ -1,8 +1,11 @@
 #pragma once
 
-#include <gpu.hpp>
-#include <image/repr.hpp>
-#include <util/as-byte.hpp>
+#include "gpu/buffer.hpp"
+#include "gpu/texture.hpp"
+#include "image/repr.hpp"
+#include "util/as-byte.hpp"
+
+#include <expected>
 
 namespace graphics
 {

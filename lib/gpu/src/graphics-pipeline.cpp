@@ -36,6 +36,25 @@ namespace gpu
 		return Graphic_shader(device, shader);
 	}
 
+	SDL_GPUDepthStencilState Graphics_pipeline::Depth_stencil_state::to_sdl(
+		this const Depth_stencil_state& self
+	) noexcept
+	{
+		return SDL_GPUDepthStencilState{
+			.compare_op = self.compare_op,
+			.back_stencil_state = self.back_stencil_state,
+			.front_stencil_state = self.front_stencil_state,
+			.compare_mask = self.compare_mask,
+			.write_mask = self.write_mask,
+			.enable_depth_test = self.enable_depth_test,
+			.enable_depth_write = self.enable_depth_write,
+			.enable_stencil_test = self.enable_stencil_test,
+			.padding1 = 0,
+			.padding2 = 0,
+			.padding3 = 0
+		};
+	}
+
 	std::expected<Graphics_pipeline, util::Error> Graphics_pipeline::create(
 		SDL_GPUDevice* device,
 		const Graphic_shader& vertex_shader,
@@ -67,29 +86,14 @@ namespace gpu
 
 		create_info.target_info.color_target_descriptions = color_target_descs.data();
 		create_info.target_info.num_color_targets = static_cast<Uint32>(color_target_descs.size());
-		create_info.target_info.depth_stencil_format = depth_stencil_state.has_value()
-			? depth_stencil_state->format
-			: SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT;
+		create_info.target_info.depth_stencil_format =
+			depth_stencil_state.transform([](const auto& state) { return state.format; })
+				.value_or(SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT);
 		create_info.target_info.has_depth_stencil_target = depth_stencil_state.has_value();
 
-		if (depth_stencil_state.has_value())
-			create_info.depth_stencil_state = SDL_GPUDepthStencilState{
-				.compare_op = depth_stencil_state->compare_op,
-				.back_stencil_state = depth_stencil_state->back_stencil_state,
-				.front_stencil_state = depth_stencil_state->front_stencil_state,
-				.compare_mask = depth_stencil_state->compare_mask,
-				.write_mask = depth_stencil_state->write_mask,
-				.enable_depth_test = depth_stencil_state->enable_depth_test,
-				.enable_depth_write = depth_stencil_state->enable_depth_write,
-				.enable_stencil_test = depth_stencil_state->enable_stencil_test,
-				.padding1 = 0,
-				.padding2 = 0,
-				.padding3 = 0
-			};
-		else
-		{
-			create_info.depth_stencil_state = SDL_GPUDepthStencilState{};
-		}
+		create_info.depth_stencil_state =
+			depth_stencil_state.transform([](const auto& state) { return state.to_sdl(); })
+				.value_or(SDL_GPUDepthStencilState{});
 
 		auto* const raw_pipeline = SDL_CreateGPUGraphicsPipeline(device, &create_info);
 		if (raw_pipeline == nullptr) RETURN_SDL_ERROR;

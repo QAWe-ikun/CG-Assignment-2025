@@ -1,11 +1,16 @@
+///
+/// @file file.hpp
+/// @brief Provides simple file read/write functions
+///
+
 #pragma once
 
 #include "error.hpp"
 
 #include <expected>
 #include <filesystem>
-#include <vector>
 #include <span>
+#include <vector>
 
 namespace util
 {

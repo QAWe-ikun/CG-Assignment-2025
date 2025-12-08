@@ -9,3 +9,4 @@ target("graphics.geometry")
 	add_files("src/**.cpp")
 
 	add_packages("glm", {public=true})
+	add_deps("util", {public=true})

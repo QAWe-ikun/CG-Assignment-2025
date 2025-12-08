@@ -4,12 +4,6 @@
 
 namespace graphics::camera::view
 {
-	Lookat::Lookat(glm::vec3 eye, glm::vec3 center, glm::vec3 up) noexcept :
-		eye(eye),
-		center(center),
-		up(up)
-	{}
-
 	static bool is_parallel(const glm::vec3& a, const glm::vec3& b) noexcept
 	{
 		const auto a_norm = glm::normalize(a);
@@ -28,5 +22,10 @@ namespace graphics::camera::view
 		}
 
 		return glm::lookAt<double, glm::packed_highp>(eye, center, up);
+	}
+
+	glm::vec3 Lookat::eye_position() noexcept
+	{
+		return eye;
 	}
 }

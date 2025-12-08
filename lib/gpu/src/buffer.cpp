@@ -122,10 +122,10 @@ namespace gpu
 	) noexcept
 	{
 		auto transfer_buffer = create(device, Usage::Upload, static_cast<uint32_t>(data.size()));
-		if (!transfer_buffer) return transfer_buffer.error().propagate("Create transfer buffer failed");
+		if (!transfer_buffer) return transfer_buffer.error().forward("Create transfer buffer failed");
 
 		if (const auto upload_result = transfer_buffer->upload_to_buffer(data, false); !upload_result)
-			return upload_result.error().propagate("Upload data failed");
+			return upload_result.error().forward("Upload data failed");
 
 		return transfer_buffer;
 	}

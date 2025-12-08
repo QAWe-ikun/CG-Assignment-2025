@@ -12,16 +12,16 @@ namespace graphics
 	) noexcept
 	{
 		auto buffer = gpu::Buffer::create(device, usage, data.size());
-		if (!buffer) return buffer.error().propagate("Create buffer failed");
+		if (!buffer) return buffer.error().forward("Create buffer failed");
 
 		auto transfer_buffer = gpu::Transfer_buffer::create_from_data(device, data);
-		if (!transfer_buffer) return transfer_buffer.error().propagate("Create transfer buffer failed");
+		if (!transfer_buffer) return transfer_buffer.error().forward("Create transfer buffer failed");
 
 		const auto copy_result = execute_copy_task(device, [&](const gpu::Copy_pass& copy_pass) {
 			copy_pass.upload_to_buffer(*transfer_buffer, 0, *buffer, 0, data.size(), false);
 		});
 
-		if (!copy_result) return copy_result.error().propagate("Execute copy task failed");
+		if (!copy_result) return copy_result.error().forward("Execute copy task failed");
 
 		return buffer;
 	}
@@ -33,10 +33,10 @@ namespace graphics
 	) noexcept
 	{
 		auto texture = gpu::Texture::create(device, format.create(image.size.x, image.size.y, 1, 1));
-		if (!texture) return texture.error().propagate("Create texture failed");
+		if (!texture) return texture.error().forward("Create texture failed");
 
 		auto transfer_buffer = gpu::Transfer_buffer::create_from_data(device, image.pixels);
-		if (!transfer_buffer) return transfer_buffer.error().propagate("Create transfer buffer failed");
+		if (!transfer_buffer) return transfer_buffer.error().forward("Create transfer buffer failed");
 
 		const SDL_GPUTextureTransferInfo transfer_info{
 			.transfer_buffer = *transfer_buffer,
@@ -61,7 +61,7 @@ namespace graphics
 			execute_copy_task(device, [&transfer_info, &texture_region](const auto& copy_pass) {
 				copy_pass.upload_to_texture(transfer_info, texture_region, false);
 			});
-		if (!copy_task_result) return copy_task_result.error().propagate("Execute copy task failed");
+		if (!copy_task_result) return copy_task_result.error().forward("Execute copy task failed");
 
 		return texture;
 	}
@@ -76,7 +76,7 @@ namespace graphics
 			device,
 			format.create(mipmap_chain[0].size.x, mipmap_chain[0].size.y, 1, mipmap_chain.size())
 		);
-		if (!texture) return texture.error().propagate("Create texture failed");
+		if (!texture) return texture.error().forward("Create texture failed");
 
 		const auto transfer_buffers =
 			mipmap_chain
@@ -85,7 +85,7 @@ namespace graphics
 			  })
 			| std::ranges::to<std::vector>();
 		for (const auto& buffer : transfer_buffers)
-			if (!buffer) return buffer.error().propagate("Create transfer buffer failed");
+			if (!buffer) return buffer.error().forward("Create transfer buffer failed");
 
 		const auto transfer_infos =
 			mipmap_chain
@@ -127,7 +127,7 @@ namespace graphics
 				copy_pass.upload_to_texture(info, region, false);
 			}
 		});
-		if (!copy_task_result) return copy_task_result.error().propagate("Execute copy task failed");
+		if (!copy_task_result) return copy_task_result.error().forward("Execute copy task failed");
 
 		return texture;
 	}

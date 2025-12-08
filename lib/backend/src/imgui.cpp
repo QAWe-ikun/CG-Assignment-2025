@@ -5,7 +5,7 @@
 #include <imgui_impl_sdlgpu3.h>
 
 #include "asset/imgui-asset.hpp"
-#include <zip/zip.hpp>
+#include "zip/zip.hpp"
 
 namespace backend
 {
@@ -18,10 +18,10 @@ namespace backend
 		config.FontDataOwnedByAtlas = false;
 
 		auto display_font = zip::decompress(resource_asset::imgui_asset.at("display.ttf"));
-		if (!display_font) return display_font.error().propagate("Decompress display font failed");
+		if (!display_font) return display_font.error().forward("Decompress display font failed");
 
 		auto symbol_font = zip::decompress(resource_asset::imgui_asset.at("symbol.ttf"));
-		if (!symbol_font) return symbol_font.error().propagate("Decompress symbol font failed");
+		if (!symbol_font) return symbol_font.error().forward("Decompress symbol font failed");
 
 		const auto display_font_add_result = io.Fonts->AddFontFromMemoryTTF(
 			display_font->data(),
@@ -84,7 +84,7 @@ namespace backend
 
 		set_imgui_style();
 		if (const auto load_font_result = load_imgui_font(); !load_font_result)
-			return load_font_result.error().propagate("Load IMGUI font failed");
+			return load_font_result.error().forward("Load IMGUI font failed");
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		const auto main_scale = sdl_context.get_window_scale();

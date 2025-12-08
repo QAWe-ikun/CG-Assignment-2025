@@ -1,11 +1,16 @@
+///
+/// @file wavefront.hpp
+/// @brief Provides functions to load Wavefront Object 3D model
+///
+
 #pragma once
 
+#include "util/error.hpp"
 #include <expected>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <span>
 #include <string_view>
-#include <util/error.hpp>
 #include <vector>
 
 namespace wavefront

@@ -1,11 +1,11 @@
 #pragma once
 
+#include "image/repr.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <expected>
 #include <format>
 #include <glm/glm.hpp>
-#include <image/repr.hpp>
 #include <span>
 #include <stb_image.h>
 
@@ -73,9 +73,10 @@ namespace image
 
 		Image<P, F> image{
 			.size = {width, height},
-			.pixels =
-				{std::from_range,
-					 std::span(reinterpret_cast<const Pixel_t<P, F>*>(pixels), size_t(width) * size_t(height))}
+			.pixels = {
+					 std::from_range,
+					 std::span(reinterpret_cast<const Pixel_t<P, F>*>(pixels), size_t(width) * size_t(height))
+			}
 		};
 
 		stbi_image_free(pixels);

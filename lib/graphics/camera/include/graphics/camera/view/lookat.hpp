@@ -24,7 +24,11 @@ namespace graphics::camera::view
 		/// @param center Target position
 		/// @param up Up direction
 		///
-		Lookat(glm::vec3 eye, glm::vec3 center, glm::vec3 up) noexcept;
+		Lookat(glm::vec3 eye, glm::vec3 center, glm::vec3 up) noexcept :
+			eye(eye),
+			center(center),
+			up(up)
+		{}
 
 		virtual ~Lookat() = default;
 
@@ -33,5 +37,6 @@ namespace graphics::camera::view
 		glm::vec3 up;
 
 		glm::dmat4 matrix() noexcept override;
+		glm::vec3 eye_position() noexcept override;
 	};
 }

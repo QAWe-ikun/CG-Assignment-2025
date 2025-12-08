@@ -10,20 +10,20 @@ namespace util
 		entries.emplace_back(location, std::move(message));
 	}
 
-	Error Error::propagate(std::string message, const std::source_location& location) const noexcept
+	Error Error::forward(std::string message, const std::source_location& location) const noexcept
 	{
 		Error new_error = *this;
 		new_error.entries.emplace_back(location, std::move(message));
 		return new_error;
 	}
 
-	std::function<util::Error(util::Error&&)> Error::propagate_fn(
+	std::function<util::Error(util::Error&&)> Error::forward_fn(
 		std::string message,
 		const std::source_location& location
 	) noexcept
 	{
 		return [msg = std::move(message), loc = location](util::Error&& err) {
-			return std::move(err).propagate(msg, loc);
+			return std::move(err).forward(msg, loc);
 		};
 	}
 

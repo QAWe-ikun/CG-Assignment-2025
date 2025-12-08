@@ -91,7 +91,7 @@ namespace graphics
 	bool box_in_frustum(
 		const glm::vec3& box_min,
 		const glm::vec3& box_max,
-		const std::array<glm::vec4, 6>& planes
+		std::span<const glm::vec4> planes
 	) noexcept
 	{
 		return std::ranges::all_of(planes, [&box_min, &box_max](const auto& plane) {

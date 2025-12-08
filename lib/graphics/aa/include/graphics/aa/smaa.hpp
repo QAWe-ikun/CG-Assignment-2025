@@ -1,9 +1,16 @@
+///
+/// @file smaa.hpp
+/// @brief Defines a SMAA antialiasing processor
+///
+
 #pragma once
 
 #include "base.hpp"
 
-#include <graphics/util/fullscreen-pass.hpp>
-#include <graphics/util/smart-texture.hpp>
+#include "gpu/sampler.hpp"
+#include "gpu/texture.hpp"
+#include "graphics/util/fullscreen-pass.hpp"
+#include "graphics/util/smart-texture.hpp"
 
 namespace graphics::aa
 {
@@ -44,20 +51,22 @@ namespace graphics::aa
 		SMAA(
 			gpu::Sampler sampler,
 			gpu::Texture blend_lut,
-			Fullscreen_pass pass1,
-			Fullscreen_pass pass2,
-			Fullscreen_pass pass3
+			gpu::Texture diag_lut,
+			Fullscreen_pass<true> pass1,
+			Fullscreen_pass<true> pass2,
+			Fullscreen_pass<true> pass3
 		) noexcept;
 
 		gpu::Sampler sampler;
 		gpu::Texture blend_lut;
+		gpu::Texture diag_lut;
 
-		Fullscreen_pass pass1;
-		Fullscreen_pass pass2;
-		Fullscreen_pass pass3;
+		Fullscreen_pass<true> pass1;
+		Fullscreen_pass<true> pass2;
+		Fullscreen_pass<true> pass3;
 
-		Smart_texture edge_texture;
-		Smart_texture blend_texture;
+		Auto_texture edge_texture;
+		Auto_texture blend_texture;
 	};
 
 }

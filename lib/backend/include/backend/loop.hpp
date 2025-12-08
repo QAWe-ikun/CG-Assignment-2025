@@ -1,12 +1,17 @@
+///
+/// @file loop.hpp
+/// @brief Provides helper functions for running the main loop
+///
+
 #pragma once
 
 #include <functional>
 #include <future>
 #include <glm/glm.hpp>
-#include <gpu/command-buffer.hpp>
 #include <imgui.h>
 #include <thread>
 
+#include "gpu/command-buffer.hpp"
 #include "sdl.hpp"
 
 namespace backend
@@ -31,10 +36,12 @@ namespace backend
 
 	///
 	/// @brief Helper function that displays a progress window until the given future is done
+	/// @details This function takes the ownership of the future, displays the UI while waiting for it to
+	/// complete, and returns the result
 	///
 	/// @tparam T The type of the future's result
 	/// @param context SDL context
-	/// @param future The future to wait for
+	/// @param future The future to wait for.
 	/// @param progress_display_fn Function to display progress. Called every frame. The ImGui window is
 	/// already created before the call.
 	/// @return The result of the future

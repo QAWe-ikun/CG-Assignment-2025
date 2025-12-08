@@ -1,3 +1,8 @@
+///
+/// @file inline.hpp
+/// @brief Inline hint macro
+///
+
 #pragma once
 
 #ifdef _MSC_VER

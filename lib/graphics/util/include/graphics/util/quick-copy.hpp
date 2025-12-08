@@ -1,6 +1,9 @@
 #pragma once
 
-#include <gpu.hpp>
+#include "gpu/copy-pass.hpp"
+
+#include <expected>
+#include <functional>
 
 namespace graphics
 {

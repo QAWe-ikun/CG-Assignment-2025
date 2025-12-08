@@ -74,7 +74,7 @@ def _to_cpp_array_line(path: tuple[str, str]) -> str:
     size = len(data)
     data_str = ",".join([f"0x{byte:02x}" for byte in data])
     varname = _encode_path(relative)
-    return f"    static const std::array<uint8_t, {size}> {varname} = {{ {data_str} }};"
+    return f"    static const uint8_t {varname}[{size}] = {{ {data_str} }};"
 
 
 def _to_cpp_map_entry(path: tuple[str, str]) -> str:

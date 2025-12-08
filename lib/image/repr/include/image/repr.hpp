@@ -1,11 +1,11 @@
 #pragma once
 
+#include "util/inline.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <glm/glm.hpp>
 #include <ranges>
-#include <util/inline.hpp>
 #include <vector>
 
 namespace image

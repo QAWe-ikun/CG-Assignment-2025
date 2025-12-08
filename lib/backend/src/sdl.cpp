@@ -23,11 +23,6 @@ namespace backend
 		return {};
 	}
 
-	SDL_context::SDL_context(SDL_Window* window, SDL_GPUDevice* device) noexcept :
-		window(window),
-		device(device)
-	{}
-
 	std::expected<std::unique_ptr<SDL_context>, util::Error> SDL_context::create(
 		int width,
 		int height,

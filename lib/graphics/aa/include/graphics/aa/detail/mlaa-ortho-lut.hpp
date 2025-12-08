@@ -1,8 +1,10 @@
 #pragma once
 
+#include <expected>
 #include <glm/glm.hpp>
-#include <gpu.hpp>
 #include <vector>
+
+#include "gpu/texture.hpp"
 
 namespace graphics::aa
 {

@@ -9,7 +9,7 @@ namespace graphics::aa
 {
 	namespace
 	{
-		constexpr size_t diag_sample_count = 2048;
+		constexpr size_t diag_sample_count = 1024;
 
 		template <uint32_t N>
 		std::array<glm::vec2, N> generate_hammersley() noexcept

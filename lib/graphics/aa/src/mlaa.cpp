@@ -34,10 +34,10 @@ namespace graphics::aa
 	std::expected<MLAA, util::Error> MLAA::create(SDL_GPUDevice* device, SDL_GPUTextureFormat format) noexcept
 	{
 		auto blend_lut = generate_ortho_area_lut(device, lut_size);
-		if (!blend_lut) return blend_lut.error().propagate("Create Area LUT failed");
+		if (!blend_lut) return blend_lut.error().forward("Create Area LUT failed");
 
 		auto sampler = gpu::Sampler::create(device, sampler_info);
-		if (!sampler) return sampler.error().propagate("Create sampler failed");
+		if (!sampler) return sampler.error().forward("Create sampler failed");
 
 		auto shader1 = gpu::Graphic_shader::create(
 			device,
@@ -49,7 +49,7 @@ namespace graphics::aa
 			0
 		);
 		auto pass1 = std::move(shader1).and_then([device](gpu::Graphic_shader shader) {
-			return Fullscreen_pass::create(device, shader, edge_texture_format, {});
+			return Fullscreen_pass<true>::create(device, shader, edge_texture_format, {});
 		});
 
 		auto shader2 = gpu::Graphic_shader::create(
@@ -62,7 +62,7 @@ namespace graphics::aa
 			0
 		);
 		auto pass2 = std::move(shader2).and_then([device](gpu::Graphic_shader shader) {
-			return Fullscreen_pass::create(device, shader, blend_texture_format, {});
+			return Fullscreen_pass<true>::create(device, shader, blend_texture_format, {});
 		});
 
 		auto shader3 = gpu::Graphic_shader::create(
@@ -75,7 +75,7 @@ namespace graphics::aa
 			0
 		);
 		auto pass3 = std::move(shader3).and_then([&](gpu::Graphic_shader shader) {
-			return Fullscreen_pass::create(
+			return Fullscreen_pass<true>::create(
 				device,
 				shader,
 				{.type = SDL_GPU_TEXTURETYPE_2D, .format = format, .usage = {.color_target = true}},
@@ -83,9 +83,9 @@ namespace graphics::aa
 			);
 		});
 
-		if (!pass1) return pass1.error().propagate("Create MLAA Pass 1 failed");
-		if (!pass2) return pass2.error().propagate("Create MLAA Pass 2 failed");
-		if (!pass3) return pass3.error().propagate("Create MLAA Pass 3 failed");
+		if (!pass1) return pass1.error().forward("Create MLAA Pass 1 failed");
+		if (!pass2) return pass2.error().forward("Create MLAA Pass 2 failed");
+		if (!pass3) return pass3.error().forward("Create MLAA Pass 3 failed");
 
 		return MLAA(
 			std::move(*sampler),
@@ -99,9 +99,9 @@ namespace graphics::aa
 	MLAA::MLAA(
 		gpu::Sampler sampler,
 		gpu::Texture blend_lut,
-		Fullscreen_pass pass1,
-		Fullscreen_pass pass2,
-		Fullscreen_pass pass3
+		Fullscreen_pass<true> pass1,
+		Fullscreen_pass<true> pass2,
+		Fullscreen_pass<true> pass3
 	) noexcept :
 		sampler(std::move(sampler)),
 		blend_lut(std::move(blend_lut)),
@@ -121,10 +121,10 @@ namespace graphics::aa
 	) noexcept
 	{
 		if (const auto result = edge_texture.resize(device, size); !result)
-			return result.error().propagate("Resize texture buffer failed");
+			return result.error().forward("Resize texture buffer failed");
 
 		if (const auto result = blend_texture.resize(device, size); !result)
-			return result.error().propagate("Resize texture buffer failed");
+			return result.error().forward("Resize texture buffer failed");
 
 		const auto pass1_texture = std::to_array<SDL_GPUTextureSamplerBinding>({
 			{.texture = source, .sampler = sampler}
@@ -143,17 +143,17 @@ namespace graphics::aa
 		if (const auto result =
 				pass1.render(command_buffer, *edge_texture, pass1_texture, std::nullopt, std::nullopt);
 			!result)
-			return result.error().propagate("Run MLAA Pass 1 failed");
+			return result.error().forward("Run MLAA Pass 1 failed");
 
 		if (const auto result =
 				pass2.render(command_buffer, *blend_texture, pass2_texture, std::nullopt, std::nullopt);
 			!result)
-			return result.error().propagate("Run MLAA Pass 2 failed");
+			return result.error().forward("Run MLAA Pass 2 failed");
 
 		if (const auto result =
 				pass3.render(command_buffer, target, pass3_texture, std::nullopt, std::nullopt);
 			!result)
-			return result.error().propagate("Run MLAA Pass 3 failed");
+			return result.error().forward("Run MLAA Pass 3 failed");
 
 		return {};
 	}

@@ -18,13 +18,12 @@ namespace image
 
 	std::vector<Image<Precision::U8, Format::RGBA>> generate_perceptual_mipmap(
 		const Image<Precision::U8, Format::RGBA>& base_image,
-		size_t levels
+		glm::u32vec2 min_size
 	) noexcept
 	{
-		const size_t max_possible_levels = calc_mipmap_levels(base_image.size);
-		const size_t actual_levels = std::min(levels, max_possible_levels);
+		const size_t levels = calc_mipmap_levels(base_image.size, min_size);
 
-		std::vector<Image_container<glm::vec4>> mipmap_chain(actual_levels);
+		std::vector<Image_container<glm::vec4>> mipmap_chain(levels);
 		mipmap_chain[0] = base_image.map([](const glm::u8vec4& pixel) {
 			return colorspace::rgba_to_ycbcr_alpha(glm::vec4(pixel) / 255.0f);
 		});

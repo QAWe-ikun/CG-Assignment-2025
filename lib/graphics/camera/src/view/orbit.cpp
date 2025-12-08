@@ -15,14 +15,17 @@ namespace graphics::camera::view
 	glm::dmat4 Orbit::matrix() noexcept
 	{
 		pitch = glm::clamp(pitch, -glm::half_pi<float>() + 0.001f, glm::half_pi<float>() - 0.001f);
+		const glm::vec3 eye = this->eye_position();
+		return glm::lookAt(eye, center, up);
+	}
 
-		const glm::vec3 eye(
+	glm::vec3 Orbit::eye_position() noexcept
+	{
+		return {
 			center.x + distance * glm::cos(pitch) * glm::sin(azimuth),
 			center.y + distance * glm::sin(pitch),
 			center.z + distance * glm::cos(pitch) * glm::cos(azimuth)
-		);
-
-		return glm::lookAt(eye, center, up);
+		};
 	}
 
 	void Orbit::Pan_controller::pan(Orbit& orbit, glm::vec2 screen_size, glm::vec2 pixel_delta) const noexcept

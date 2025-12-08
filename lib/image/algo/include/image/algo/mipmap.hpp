@@ -1,7 +1,11 @@
+///
+/// @file mipmap.hpp
+/// @brief Provides functions to generate mipmap chains for images
+///
+
 #pragma once
 
-#include <image/repr.hpp>
-#include <util/error.hpp>
+#include "image/repr.hpp"
 
 namespace image
 {
@@ -24,7 +28,7 @@ namespace image
 	///
 	std::vector<Image<Precision::U8, Format::RGBA>> generate_perceptual_mipmap(
 		const Image<Precision::U8, Format::RGBA>& base_image,
-		size_t levels = std::numeric_limits<size_t>::max()
+		glm::u32vec2 min_size = {1, 1}
 	) noexcept;
 
 	///

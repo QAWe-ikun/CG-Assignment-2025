@@ -1,8 +1,14 @@
+///
+/// @file fxaa.hpp
+/// @brief Defines a FXAA antialiasing processor
+///
+
 #pragma once
 
 #include "base.hpp"
 
-#include <graphics/util/fullscreen-pass.hpp>
+#include "gpu/sampler.hpp"
+#include "graphics/util/fullscreen-pass.hpp"
 
 namespace graphics::aa
 {
@@ -41,10 +47,10 @@ namespace graphics::aa
 
 	  private:
 
-		FXAA(Fullscreen_pass fxaa_pass, gpu::Sampler sampler) noexcept;
+		FXAA(Fullscreen_pass<true> fxaa_pass, gpu::Sampler sampler) noexcept;
 
 		gpu::Sampler sampler;
-		Fullscreen_pass fxaa_pass;
+		Fullscreen_pass<true> fxaa_pass;
 	};
 
 }

@@ -1,7 +1,12 @@
+///
+/// @file compress.hpp
+/// @brief Provides functions to compress images into BCn formats
+///
+
 #pragma once
 
 #include "image/repr.hpp"
-#include <util/error.hpp>
+#include "util/error.hpp"
 
 namespace image
 {
@@ -50,7 +55,8 @@ namespace image
 	///
 	/// @brief Mipmap compressing funtor
 	///
-	/// @details #### Usage example \n `.and_then(image::Compress_mipmap(image::compress_to_bc3))`
+	/// @details #### Example
+	/// `some_image_result.and_then(image::Compress_mipmap(image::compress_to_bc3))`
 	///
 	/// @tparam Pixel_in Type of input pixel
 	/// @tparam Pixel_out Type of output pixel
@@ -89,7 +95,7 @@ namespace image
 			{
 				auto compressed_image = func(src_image);
 				if (!compressed_image)
-					return compressed_image.error().propagate(
+					return compressed_image.error().forward(
 						std::format("Compress mipmap level {} failed", idx)
 					);
 

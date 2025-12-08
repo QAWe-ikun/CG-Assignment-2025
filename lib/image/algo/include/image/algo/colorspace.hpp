@@ -1,3 +1,8 @@
+///
+/// @file colorspace.hpp
+/// @brief Colorspace conversion functions between RGB and YCbCr
+///
+
 #pragma once
 
 #include <glm/ext/matrix_float3x3.hpp>

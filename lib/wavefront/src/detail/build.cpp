@@ -28,7 +28,7 @@ namespace wavefront::detail
 		{
 			const auto parsed_line = parse_line(line);
 			if (!parsed_line)
-				return parsed_line.error().propagate(std::format("Parsing failed at line {}", i + 1));
+				return parsed_line.error().forward(std::format("Parsing failed at line {}", i + 1));
 			if (!std::holds_alternative<std::monostate>(*parsed_line)) result.push_back(*parsed_line);
 		}
 

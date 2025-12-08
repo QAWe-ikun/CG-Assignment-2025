@@ -49,10 +49,10 @@ namespace backend
 		/* Acquire Swapchain */
 
 		auto command_buffer = gpu::Command_buffer::acquire_from(context.device);
-		if (!command_buffer) return command_buffer.error().propagate("Acquire command buffer failed");
+		if (!command_buffer) return command_buffer.error().forward("Acquire command buffer failed");
 
 		const auto swapchain_result = command_buffer->wait_and_acquire_swapchain_texture(context.window);
-		if (!swapchain_result) return swapchain_result.error().propagate("Acquire swapchain texture failed");
+		if (!swapchain_result) return swapchain_result.error().forward("Acquire swapchain texture failed");
 		const auto [swapchain_texture, width, height] = *swapchain_result;
 
 		/* Upload ImGui Data */
@@ -64,7 +64,7 @@ namespace backend
 		if (render_fn != nullptr)
 		{
 			const auto render_result = render_fn(*command_buffer, swapchain_texture, {width, height});
-			if (!render_result) return render_result.error().propagate("Render function failed");
+			if (!render_result) return render_result.error().forward("Render function failed");
 		}
 
 		/* Render ImGui Content */
@@ -77,12 +77,12 @@ namespace backend
 				backend::imgui_draw_to_renderpass(*command_buffer, render_pass);
 			}
 		);
-		if (!render_imgui_result) return render_imgui_result.error().propagate("Render ImGui failed");
+		if (!render_imgui_result) return render_imgui_result.error().forward("Render ImGui failed");
 
 		/* Submit Command Buffer */
 
 		const auto submit_result = command_buffer->submit();
-		if (!submit_result) return submit_result.error().propagate("Submit command buffer failed");
+		if (!submit_result) return submit_result.error().forward("Submit command buffer failed");
 
 		return should_continue;
 	}

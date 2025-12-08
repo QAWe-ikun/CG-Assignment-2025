@@ -1,8 +1,8 @@
 #pragma once
 
+#include "util/error.hpp"
 #include <SDL3/SDL_gpu.h>
 #include <cassert>
-#include <util/error.hpp>
 #include <utility>
 
 namespace gpu

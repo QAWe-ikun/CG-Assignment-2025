@@ -1,3 +1,8 @@
+///
+/// @file error.hpp
+/// @brief Provides an Error class containing an error trace
+///
+
 #pragma once
 
 #include <expected>
@@ -50,18 +55,18 @@ namespace util
 		) noexcept;
 
 		///
-		/// @brief Propagate the error by adding a new trace entry
+		/// @brief forward the error by adding a new trace entry
 		///
 		/// @param message Additional error information
 		/// @param location Location where the error is propagated, default to current location
 		/// @return
 		///
-		Error propagate(
+		Error forward(
 			std::string message = "",
 			const std::source_location& location = std::source_location::current()
 		) const noexcept;
 
-		static std::function<util::Error(util::Error&&)> propagate_fn(
+		static std::function<util::Error(util::Error&&)> forward_fn(
 			std::string message = "",
 			const std::source_location& location = std::source_location::current()
 		) noexcept;

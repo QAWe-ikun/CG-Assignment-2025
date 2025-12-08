@@ -1,10 +1,15 @@
+///
+/// @file zip.hpp
+/// @brief ZIP Decompression Utilities
+///
+
 #pragma once
 
 #include <expected>
 #include <span>
 #include <vector>
 
-#include <util/error.hpp>
+#include "util/error.hpp"
 
 namespace zip
 {
@@ -29,12 +34,9 @@ namespace zip
 	{
 		size_t max_size;
 
-		///
-		/// @brief Create a Decompressor
-		///
-		/// @param max_size Maximum acceptable size after decompression, default 1GiB
-		///
-		Decompress(size_t max_size = 1 << 30);
+		Decompress(size_t max_size = 1 << 30) :
+			max_size(max_size)
+		{}
 
 		std::expected<std::vector<std::byte>, util::Error> operator()(
 			std::span<const std::byte> data

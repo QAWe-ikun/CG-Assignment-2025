@@ -5,6 +5,7 @@
 #include "scoped-pass.hpp"
 
 #include <SDL3/SDL_gpu.h>
+#include <concepts>
 #include <span>
 
 namespace gpu
@@ -31,6 +32,22 @@ namespace gpu
 		) const noexcept;
 
 		///
+		/// @brief Bind some vertex buffers
+		///
+		/// @param first_slot First binding slot
+		/// @param bindings Binding packs, the first one is bound to first_slot, and so on
+		///
+		template <std::convertible_to<SDL_GPUBufferBinding>... Args>
+			requires(sizeof...(Args) > 0)
+		void bind_vertex_buffers(uint32_t first_slot, Args&&... bindings) const noexcept
+		{
+			const std::array<SDL_GPUBufferBinding, sizeof...(bindings)> binding_arr = {
+				std::forward<Args>(bindings)...
+			};
+			bind_vertex_buffers(first_slot, binding_arr);
+		}
+
+		///
 		/// @brief Binds an index buffer
 		///
 		/// @param binding Buffer information
@@ -53,6 +70,22 @@ namespace gpu
 		) const noexcept;
 
 		///
+		/// @brief Bind some vertex samplers
+		///
+		/// @param first_slot First binding slot
+		/// @param bindings Binding packs, the first one is bound to first_slot, and so on
+		///
+		template <std::convertible_to<SDL_GPUTextureSamplerBinding>... Args>
+			requires(sizeof...(Args) > 0)
+		void bind_vertex_samplers(uint32_t first_slot, Args&&... bindings) const noexcept
+		{
+			const std::array<SDL_GPUTextureSamplerBinding, sizeof...(bindings)> binding_arr = {
+				std::forward<Args>(bindings)...
+			};
+			bind_vertex_samplers(first_slot, binding_arr);
+		}
+
+		///
 		/// @brief Binds storage textures for the vertex shader
 		///
 		/// @param first_slot First binding slot
@@ -62,6 +95,22 @@ namespace gpu
 			uint32_t first_slot,
 			std::span<SDL_GPUTexture* const> textures
 		) const noexcept;
+
+		///
+		/// @brief Bind some vertex storage textures
+		///
+		/// @param first_slot First binding slot
+		/// @param textures Texture packs, the first one is bound to first_slot, and so on
+		///
+		template <std::convertible_to<SDL_GPUTexture*>... Args>
+			requires(sizeof...(Args) > 0)
+		void bind_vertex_storage_textures(uint32_t first_slot, Args&&... textures) const noexcept
+		{
+			const std::array<SDL_GPUTexture*, sizeof...(Args)> texture_arr = {
+				std::forward<Args>(textures)...
+			};
+			bind_vertex_storage_textures(first_slot, texture_arr);
+		}
 
 		///
 		/// @brief Binds storage buffers for the vertex shader
@@ -75,6 +124,20 @@ namespace gpu
 		) const noexcept;
 
 		///
+		/// @brief Bind some vertex storage buffers
+		///
+		/// @param first_slot First binding slot
+		/// @param buffers Buffer packs, the first one is bound to first_slot, and so on
+		///
+		template <std::convertible_to<SDL_GPUBuffer*>... Args>
+			requires(sizeof...(Args) > 0)
+		void bind_vertex_storage_buffers(uint32_t first_slot, Args&&... buffers) const noexcept
+		{
+			const std::array<SDL_GPUBuffer*, sizeof...(Args)> buffer_arr = {std::forward<Args>(buffers)...};
+			bind_vertex_storage_buffers(first_slot, buffer_arr);
+		}
+
+		///
 		/// @brief Binds samplers for the fragment shader
 		///
 		/// @param first_slot First binding slot
@@ -84,6 +147,22 @@ namespace gpu
 			uint32_t first_slot,
 			std::span<const SDL_GPUTextureSamplerBinding> bindings
 		) const noexcept;
+
+		///
+		/// @brief Bind some fragment samplers
+		///
+		/// @param first_slot First binding slot
+		/// @param bindings Binding packs, the first one is bound to first_slot, and so on
+		///
+		template <std::convertible_to<SDL_GPUTextureSamplerBinding>... Args>
+			requires(sizeof...(Args) > 0)
+		void bind_fragment_samplers(uint32_t first_slot, Args&&... bindings) const noexcept
+		{
+			const std::array<SDL_GPUTextureSamplerBinding, sizeof...(bindings)> binding_arr = {
+				std::forward<Args>(bindings)...
+			};
+			bind_fragment_samplers(first_slot, binding_arr);
+		}
 
 		///
 		/// @brief Binds storage textures for the fragment shader
@@ -97,6 +176,22 @@ namespace gpu
 		) const noexcept;
 
 		///
+		/// @brief Bind some fragment storage textures
+		///
+		/// @param first_slot First binding slot
+		/// @param textures Texture packs, the first one is bound to first_slot, and so on
+		///
+		template <std::convertible_to<SDL_GPUTexture*>... Args>
+			requires(sizeof...(Args) > 0)
+		void bind_fragment_storage_textures(uint32_t first_slot, Args&&... textures) const noexcept
+		{
+			const std::array<SDL_GPUTexture*, sizeof...(Args)> texture_arr = {
+				std::forward<Args>(textures)...
+			};
+			bind_fragment_storage_textures(first_slot, texture_arr);
+		}
+
+		///
 		/// @brief Binds storage buffers for the fragment shader
 		///
 		/// @param first_slot First binding slot
@@ -106,6 +201,20 @@ namespace gpu
 			uint32_t first_slot,
 			std::span<SDL_GPUBuffer* const> buffers
 		) const noexcept;
+
+		///
+		/// @brief Bind some fragment storage buffers
+		///
+		/// @param first_slot First binding slot
+		/// @param buffers Buffer packs, the first one is bound to first_slot, and so on
+		///
+		template <std::convertible_to<SDL_GPUBuffer*>... Args>
+			requires(sizeof...(Args) > 0)
+		void bind_fragment_storage_buffers(uint32_t first_slot, Args&&... buffers) const noexcept
+		{
+			const std::array<SDL_GPUBuffer*, sizeof...(Args)> buffer_arr = {std::forward<Args>(buffers)...};
+			bind_fragment_storage_buffers(first_slot, buffer_arr);
+		}
 
 		///
 		/// @brief Draws primitives using indices

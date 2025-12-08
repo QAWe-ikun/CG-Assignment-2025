@@ -1,6 +1,14 @@
+///
+/// @file unwrap.hpp
+/// @brief Useful unwrapping functions for std::expected with util::Error
+///
+
 #pragma once
 
+#include <utility>
+
 #include "error.hpp"
+#include "inline.hpp"
 
 namespace util
 {
@@ -18,18 +26,33 @@ namespace util
 	/// @param location Source location, defaults to current location
 	/// @return Unwrapper object
 	///
-	Unwrap unwrap(
-		const std::string& message = "",
+	FORCE_INLINE constexpr Unwrap unwrap(
+		std::string message,
 		const std::source_location& location = std::source_location::current()
-	) noexcept;
+	) noexcept
+	{
+		return Unwrap{.location = location, .message = std::move(message)};
+	}
+
+	FORCE_INLINE constexpr Unwrap unwrap(
+		const std::source_location& location = std::source_location::current()
+	) noexcept
+	{
+		return Unwrap{.location = location, .message = ""};
+	}
 
 	template <typename T>
 		requires(!std::is_same_v<T, void>)
-	T operator|(std::expected<T, Error> expected, const Unwrap& unwrap)
+	FORCE_INLINE inline T operator|(std::expected<T, Error> expected, const Unwrap& unwrap)
 	{
-		if (!expected) throw expected.error().propagate(unwrap.message, unwrap.location);
+		if (!expected) [[unlikely]]
+			throw expected.error().forward(unwrap.message, unwrap.location);
 		return std::move(expected.value());
 	}
 
-	void operator|(std::expected<void, Error> expected, const Unwrap& unwrap);
+	FORCE_INLINE inline void operator|(std::expected<void, Error> expected, const Unwrap& unwrap)
+	{
+		if (!expected) [[unlikely]]
+			throw expected.error().forward(unwrap.message, unwrap.location);
+	}
 }

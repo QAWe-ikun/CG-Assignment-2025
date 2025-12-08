@@ -1,7 +1,13 @@
+///
+/// @file base.hpp
+/// @brief Defines base interface for antialiasing processors
+///
+
 #pragma once
 
 #include <glm/glm.hpp>
-#include <gpu.hpp>
+
+#include "gpu/command-buffer.hpp"
 
 namespace graphics::aa
 {

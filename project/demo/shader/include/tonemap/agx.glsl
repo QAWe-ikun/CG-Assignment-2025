@@ -1,3 +1,5 @@
+precision highp float;
+
 /* AGX */
 
 const mat3 LINEAR_REC2020_TO_LINEAR_SRGB = mat3(
