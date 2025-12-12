@@ -148,7 +148,8 @@ namespace pipeline
 			.padding3 = 0
 		};
 
-		const auto dispatch_size = (internal_param.resolution + 7u) / 8u;
+		const auto half_res = (internal_param.resolution + 1u) / 2u;
+		const auto dispatch_size = (half_res + 7u) / 8u;
 
 		command_buffer.push_debug_group("SSGI Pass");
 		auto result = command_buffer.run_compute_pass(

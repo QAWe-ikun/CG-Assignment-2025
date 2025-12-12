@@ -1,3 +1,5 @@
+// HALF RES
+
 #version 460
 
 #extension GL_GOOGLE_include_directive : enable
@@ -173,7 +175,7 @@ const int MAX_ITER = 96;
 int iter;
 
 // retuning `a` component as hit/miss flag (1.0 = hit, 0.0 = miss)
-vec4 raytrace(vec3 view_pos, vec3 march_dir)
+vec4 raytrace(vec3 view_pos, vec3 march_dir, ivec2 pixel_coord)
 {
     const Ray march_ray = Ray(
             view_pos,
@@ -183,7 +185,7 @@ vec4 raytrace(vec3 view_pos, vec3 march_dir)
     const vec2 pixel_delta = uv_space_march_dir(march_dir, view_pos);
     const vec2 dda_step = dda_step_direction(pixel_delta);
 
-    vec2 traverse_screen_pixcoord = vec2(gl_GlobalInvocationID.xy) + 0.5;
+    vec2 traverse_screen_pixcoord = vec2(pixel_coord) + 0.5;
     const vec2 initial_screen_pixcoord = traverse_screen_pixcoord;
     traverse_screen_pixcoord += dda_step; // Advance one step to avoid self-intersection
 
@@ -294,24 +296,15 @@ vec4 raytrace(vec3 view_pos, vec3 march_dir)
     return vec4(0.0);
 }
 
-shared bool early_exit;
-
 void main()
 {
     const ivec2 resolution_ivec = ivec2(resolution);
-    const ivec2 pixel_coord = ivec2(gl_GlobalInvocationID.xy);
+    const ivec2 pixel_coord = ivec2(gl_GlobalInvocationID.xy) * 2;
+    const ivec2 half_res_coord = ivec2(gl_GlobalInvocationID.xy);
     
-    if(gl_LocalInvocationIndex == 0)
+    if(any(greaterThanEqual(pixel_coord, resolution)))
     {
-        const ivec2 pixel_coord_mip3 = pixel_coord >> 3;
-        early_exit = texelFetch(depth_tex, pixel_coord_mip3, 3).r == 0.0;
-    }
-
-    barrier();
-
-    if(early_exit || any(greaterThanEqual(gl_GlobalInvocationID.xy, resolution)))
-    {
-        imageStore(ssgi_trace_out, pixel_coord, vec4(0.0));
+        imageStore(ssgi_trace_out, half_res_coord, vec4(0.0));
         return;
     }
 
@@ -321,13 +314,13 @@ void main()
 
     if (depth == 0.0)
     {
-        imageStore(ssgi_trace_out, pixel_coord, vec4(0.0));
+        imageStore(ssgi_trace_out, half_res_coord, vec4(0.0));
         return;
     }
 
     const vec4 noise_unorm = texture(
             blue_noise_tex,
-            vec2(pixel_coord + time_noise) / 128
+            vec2(half_res_coord + time_noise) / 128
         );
     const uvec2 light_info = texelFetch(light_info_tex, pixel_coord, 0).rg;
 
@@ -351,13 +344,13 @@ void main()
     
     if(march_dir == vec3(0.0))
     {
-        imageStore(ssgi_trace_out, pixel_coord, vec4(0.0));
+        imageStore(ssgi_trace_out, half_res_coord, vec4(0.0));
         return;
     }
 
-    const vec4 trace_result = raytrace(view_pos, normalize(march_dir));
+    const vec4 trace_result = raytrace(view_pos, normalize(march_dir), pixel_coord);
 
-    const vec3 albedo = texture(albedo_tex, (vec2(pixel_coord) + 0.5) / vec2(resolution_ivec)).rgb;
+    const vec3 albedo = texelFetch(albedo_tex, pixel_coord, 0).rgb;
 
-    imageStore(ssgi_trace_out, pixel_coord, vec4(trace_result.rgb * trace_result.a * albedo, trace_result.a));
+    imageStore(ssgi_trace_out, half_res_coord, vec4(trace_result.rgb * trace_result.a * albedo, trace_result.a));
 }
