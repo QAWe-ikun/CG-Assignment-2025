@@ -61,13 +61,13 @@ namespace pipeline
 		auto noise_texture =
 			util::get_asset(resource_asset::graphic_asset, noise_image_name)
 				.and_then(zip::Decompress())
-				.and_then(image::load_from_memory<image::Precision::U8, image::Format::RGBA>)
+				.and_then(image::load_from_memory<image::Precision::U16, image::Format::RGBA>)
 				.and_then([device](const auto& image) {
 					return graphics::create_texture_from_image(
 						device,
 						gpu::Texture::Format{
 							.type = SDL_GPU_TEXTURETYPE_2D,
-							.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+							.format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_UNORM,
 							.usage = {.sampler = true}
 						},
 						image,

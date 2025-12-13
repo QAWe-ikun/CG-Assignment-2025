@@ -82,11 +82,13 @@ function _build(target, source_path, opt)
 	local paths = get_path(target)
 
 	local tools = {
-		glsl_compiler = find_tool("glslc"),
+		glslc = find_tool("glslc"),
+		glslangValidator = find_tool("glslangValidator"),
 		python = find_tool("python3") or find_tool("python")
 	}
 
-	assert(tools.glsl_compiler, "GLSL compiler not found")
+	assert(tools.glslc, "GLSL compiler not found")
+	assert(tools.glslangValidator, "glslangValidator not found")
 	assert(tools.python, "Python not found")
 
 	-- Find directories
@@ -102,6 +104,7 @@ function _build(target, source_path, opt)
 	local varname = string.gsub(source_name, "[%.%-]", "_")
 
 	local targetenv = target:extraconf("rules", "asset.shader", "targetenv") or "vulkan1.3"
+	local debug = target:extraconf("rules", "asset.shader", "debug") or false
 	local includedir = target:extraconf("rules", "asset.shader", "includedir") or nil
 
 	-- Compile shader to SPIR-V and generate C++ source file
@@ -111,16 +114,27 @@ function _build(target, source_path, opt)
 
 		-- Compile shader into SPIR-V
 
-		os.vrunv(tools.glsl_compiler.program, 
-			{
-				"--target-env=" .. targetenv, 
-				"-g", 
-				includedir and format("-I%s", path.join(target:scriptdir(), includedir)) or "-I.",
-				"-o", spv_temp_path,
-				"-O",
-				source_path
-			}
-		)
+		if debug then
+			os.vrunv(tools.glslangValidator.program, 
+				{
+					"--target-env", targetenv, 
+					"-gVS", 
+					includedir and format("-I%s", path.join(target:scriptdir(), includedir)) or "-I.",
+					"-o", spv_temp_path, 
+					source_path
+				}
+			)
+		else
+			os.vrunv(tools.glslc.program, 
+				{
+					"--target-env=" .. targetenv, 
+					includedir and format("-I%s", path.join(target:scriptdir(), includedir)) or "-I.",
+					"-o", spv_temp_path,
+					"-O",
+					source_path
+				}
+			)
+		end
 
 		-- Generate C++ source file
 

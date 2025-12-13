@@ -104,21 +104,30 @@ vec3 W_to_V_vec(vec3 W_vec)
     return normalize(V_vec_h.xyz);
 }
 
+mat3 build_onb_frivjad(vec3 normal)
+{
+    float sign = normal.z >= 0.0 ? 1.0 : -1.0;
+    float a = -1.0 / (sign + normal.z);
+    float b = normal.x * normal.y * a;
+    vec3 T = vec3(1.0 + sign * normal.x * normal.x * a, sign * b, -sign * normal.x);
+    vec3 B = vec3(b, sign + normal.y * normal.y * a, -normal.y);
+    return mat3(normalize(T), normalize(B), normal); // T and B are already orthogonal to normal
+}
+
 // Select a march direction based on normal, view direction and noise
 vec3 select_march_direction(vec3 normal,
                             vec3 view_dir,
                             vec4 noise_unorm)
 {
-    vec3 N = normal;
-    vec3 T = cross(vec3(1.0, 0.0, 0.0), N);
-    vec3 B = cross(N, T);
-    mat3 TBN = mat3(T, B, N);
+    float u1 = noise_unorm.x;
+    float u2 = noise_unorm.y;
+    float r = sqrt(u1);
+    float phi = 8.0 * PI * u2;
+    vec3 local = vec3(r * sin(phi), r * cos(phi), sqrt(max(0.0, 1.0 - u1)));
 
-    float theta = acos(1 - noise_unorm.x);
-    float phi = noise_unorm.y * 2.0 * PI;
-    vec3 xyz = vec3(cos(theta) * sin(phi), cos(theta) * cos(phi), sin(theta));
+    mat3 TBN = build_onb_frivjad(normal); 
 
-    return TBN * xyz;
+    return normalize(TBN * local);
 }
 
 // Calculate PUV space march direction from V space march direction
