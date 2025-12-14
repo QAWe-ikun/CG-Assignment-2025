@@ -427,6 +427,7 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 			pipeline::SSGI::Param{
 				.proj_mat = logic_result.camera.proj_matrix,
 				.view_mat = logic_result.camera.view_matrix,
+				.prev_view_proj_mat = logic_result.camera.prev_camera_matrix,
 				.max_scene_distance = gbuffer_drawdata.get_max_distance(),
 				.distance_attenuation = 0.0
 			},
@@ -505,7 +506,7 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 				render_resource.debug_pipeline.render_channels(
 					command_buffer,
 					swapchain_pass,
-					*render_resource.ssgi_target.primary_trace_texture,
+					render_resource.ssgi_target.temporal_reservoir_texture4.current(),
 					swapchain_size,
 					4
 				);

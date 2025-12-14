@@ -14,7 +14,7 @@
 
 namespace pipeline
 {
-	SSGI::Internal_param SSGI::Internal_param::from_param(
+	SSGI::Initial_sample_param SSGI::Initial_sample_param::from_param(
 		const Param& param,
 		const glm::uvec2& resolution
 	) noexcept
@@ -38,10 +38,12 @@ namespace pipeline
 
 		const glm::ivec2 time_noise = {distribution(generator), distribution(generator)};
 
-		return Internal_param{
+		return Initial_sample_param{
 			.inv_proj_mat = inv_proj_mat,
 			.proj_mat = param.proj_mat,
+			.inv_view_mat = glm::inverse(param.view_mat),
 			.view_mat = param.view_mat,
+			.back_proj_mat = param.prev_view_proj_mat * glm::inverse(param.view_mat),
 			.inv_proj_mat_col3 = inv_proj_mat[2],
 			.inv_proj_mat_col4 = inv_proj_mat[3],
 			.resolution = resolution,
@@ -109,15 +111,17 @@ namespace pipeline
 
 		auto nearest_sampler = gpu::Sampler::create(device, nearest_sampler_create_info);
 		auto noise_sampler = gpu::Sampler::create(device, noise_sampler_create_info);
+		auto linear_sampler = gpu::Sampler::create(device, linear_sampler_create_info);
 		if (!nearest_sampler) return nearest_sampler.error().forward("Create SSGI nearest sampler failed");
 		if (!noise_sampler) return noise_sampler.error().forward("Create SSGI noise sampler failed");
+		if (!linear_sampler) return linear_sampler.error().forward("Create SSGI linear sampler failed");
 
 		/* Create Pipeline */
 
 		const gpu::Compute_pipeline::Create_info pipeline_create_info{
 			.shader_data = shader_asset::ssgi_trace_comp,
-			.num_samplers = 5,
-			.num_readwrite_storage_textures = 1,
+			.num_samplers = 10,
+			.num_readwrite_storage_textures = 4,
 			.num_uniform_buffers = 1,
 			.threadcount_x = 8,
 			.threadcount_y = 8,
@@ -132,6 +136,7 @@ namespace pipeline
 			std::move(*ssgi_pipeline),
 			std::move(*noise_sampler),
 			std::move(*nearest_sampler),
+			std::move(*linear_sampler),
 			std::move(*noise_texture)
 		);
 	}
@@ -143,13 +148,34 @@ namespace pipeline
 		const target::SSGI& ssgi_target,
 		const Param& param,
 		glm::u32vec2 resolution
-	) noexcept
+	) const noexcept
 	{
-		const Internal_param internal_param = Internal_param::from_param(param, resolution);
-		command_buffer.push_uniform_to_compute(0, util::as_bytes(internal_param));
 
-		const SDL_GPUStorageTextureReadWriteBinding write_binding{
-			.texture = *ssgi_target.primary_trace_texture,
+		const auto initial_sample_result =
+			this->run_initial_sample(command_buffer, light_buffer, gbuffer, ssgi_target, param, resolution);
+		if (!initial_sample_result)
+			return initial_sample_result.error().forward("Run SSGI initial sample failed");
+
+		return {};
+	}
+
+	std::expected<void, util::Error> SSGI::run_initial_sample(
+		const gpu::Command_buffer& command_buffer,
+		const target::Light_buffer& light_buffer,
+		const target::Gbuffer& gbuffer,
+		const target::SSGI& ssgi_target,
+		const Param& param,
+		glm::u32vec2 resolution
+	) const noexcept
+	{
+		const auto half_res = (resolution + 1u) / 2u;
+		const auto dispatch_size = (half_res + 7u) / 8u;
+
+		const Initial_sample_param initial_sample_param = Initial_sample_param::from_param(param, resolution);
+		command_buffer.push_uniform_to_compute(0, util::as_bytes(initial_sample_param));
+
+		const SDL_GPUStorageTextureReadWriteBinding write_binding_texture1{
+			.texture = ssgi_target.temporal_reservoir_texture1.current(),
 			.mip_level = 0,
 			.layer = 0,
 			.cycle = true,
@@ -158,14 +184,46 @@ namespace pipeline
 			.padding3 = 0
 		};
 
-		const auto half_res = (internal_param.resolution + 1u) / 2u;
-		const auto dispatch_size = (half_res + 7u) / 8u;
+		const SDL_GPUStorageTextureReadWriteBinding write_binding_texture2{
+			.texture = ssgi_target.temporal_reservoir_texture2.current(),
+			.mip_level = 0,
+			.layer = 0,
+			.cycle = true,
+			.padding1 = 0,
+			.padding2 = 0,
+			.padding3 = 0
+		};
+
+		const SDL_GPUStorageTextureReadWriteBinding write_binding_texture3{
+			.texture = ssgi_target.temporal_reservoir_texture3.current(),
+			.mip_level = 0,
+			.layer = 0,
+			.cycle = true,
+			.padding1 = 0,
+			.padding2 = 0,
+			.padding3 = 0
+		};
+
+		const SDL_GPUStorageTextureReadWriteBinding write_binding_texture4{
+			.texture = ssgi_target.temporal_reservoir_texture4.current(),
+			.mip_level = 0,
+			.layer = 0,
+			.cycle = true,
+			.padding1 = 0,
+			.padding2 = 0,
+			.padding3 = 0
+		};
+
+		const std::array write_bindings =
+			{write_binding_texture1, write_binding_texture2, write_binding_texture3, write_binding_texture4};
 
 		command_buffer.push_debug_group("SSGI Pass");
 		auto result = command_buffer.run_compute_pass(
-			std::to_array({write_binding}),
+			write_bindings,
 			{},
-			[this, &light_buffer, &gbuffer, dispatch_size](const gpu::Compute_pass& compute_pass) {
+			[this, &light_buffer, &gbuffer, &ssgi_target, dispatch_size](
+				const gpu::Compute_pass& compute_pass
+			) {
 				compute_pass.bind_pipeline(ssgi_pipeline);
 				compute_pass.bind_samplers(
 					0,
@@ -173,7 +231,13 @@ namespace pipeline
 					gbuffer.depth_value_texture.current().bind_with_sampler(nearest_sampler),
 					gbuffer.lighting_info_texture->bind_with_sampler(nearest_sampler),
 					noise_texture.bind_with_sampler(noise_sampler),
-					gbuffer.albedo_texture->bind_with_sampler(nearest_sampler)
+					gbuffer.albedo_texture->bind_with_sampler(nearest_sampler),
+					gbuffer.depth_value_texture.prev().bind_with_sampler(linear_sampler),
+
+					ssgi_target.temporal_reservoir_texture1.prev().bind_with_sampler(nearest_sampler),
+					ssgi_target.temporal_reservoir_texture2.prev().bind_with_sampler(nearest_sampler),
+					ssgi_target.temporal_reservoir_texture3.prev().bind_with_sampler(nearest_sampler),
+					ssgi_target.temporal_reservoir_texture4.prev().bind_with_sampler(nearest_sampler)
 				);
 				compute_pass.dispatch(dispatch_size.x, dispatch_size.y, 1);
 			}

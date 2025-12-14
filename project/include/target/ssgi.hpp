@@ -5,15 +5,70 @@
 
 namespace target
 {
+	///
+	/// @brief SSGI render targets
+	/// @details ### Contents
+	/// #### Temporal Reservoir
+	/// - Texture 1: R32G32B32A32_FLOAT
+	///   - R: w
+	///   - G: M
+	///   - B: W
+	///   - A: (unused)
+	/// - Texture 2: R32G32B32A32_UINT
+	///   - RGB: Ray hit position (x, y, z)
+	///   - A: Ray hit normal (octahedral encoded)
+	/// - Texture 3: R32G32B32A32_UINT
+	///   - RGB: Ray start position (x, y, z)
+	///   - A: Ray start normal (octahedral encoded)
+	/// - Texture 4: R16G16B16A16_FLOAT
+	///   - RGB: Radiance (r, g, b)
+	///   - A: Direct light (1 for yes, 0 for no)
+	///
 	struct SSGI
 	{
-		static constexpr gpu::Texture::Format ssgi_buffer_format = {
+		static constexpr gpu::Texture::Format temporal_reservoir_texture1_format = {
 			.type = SDL_GPU_TEXTURETYPE_2D,
-			.format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
-			.usage = {.sampler = true, .compute_storage_write = true}
+			.format = SDL_GPU_TEXTUREFORMAT_R32G32B32A32_FLOAT,
+			.usage = {.sampler = true, .compute_storage_read = true, .compute_storage_write = true}
 		};
 
-		graphics::Auto_texture primary_trace_texture{ssgi_buffer_format, "SSGI Trace Texture"};
+		static constexpr gpu::Texture::Format temporal_reservoir_texture2_format = {
+			.type = SDL_GPU_TEXTURETYPE_2D,
+			.format = SDL_GPU_TEXTUREFORMAT_R32G32B32A32_UINT,
+			.usage = {.sampler = true, .compute_storage_read = true, .compute_storage_write = true}
+		};
+
+		static constexpr gpu::Texture::Format temporal_reservoir_texture3_format = {
+			.type = SDL_GPU_TEXTURETYPE_2D,
+			.format = SDL_GPU_TEXTUREFORMAT_R32G32B32A32_UINT,
+			.usage = {.sampler = true, .compute_storage_read = true, .compute_storage_write = true}
+		};
+
+		static constexpr gpu::Texture::Format temporal_reservoir_texture4_format = {
+			.type = SDL_GPU_TEXTURETYPE_2D,
+			.format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+			.usage = {.sampler = true, .compute_storage_read = true, .compute_storage_write = true}
+		};
+
+		graphics::Cycle_texture temporal_reservoir_texture1{
+			temporal_reservoir_texture1_format,
+			"SSGI Temporal Reservoir Texture 1"
+		};
+
+		graphics::Cycle_texture temporal_reservoir_texture2{
+			temporal_reservoir_texture2_format,
+			"SSGI Temporal Reservoir Texture 2"
+		};
+
+		graphics::Cycle_texture temporal_reservoir_texture3{
+			temporal_reservoir_texture3_format,
+			"SSGI Temporal Reservoir Texture 3"
+		};
+
+		graphics::Cycle_texture temporal_reservoir_texture4{
+			temporal_reservoir_texture4_format,
+			"SSGI Temporal Reservoir Texture 4"
+		};
 
 		///
 		/// @brief Resize SSGI render targets

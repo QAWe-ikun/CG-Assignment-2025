@@ -22,6 +22,7 @@ namespace pipeline
 		{
 			glm::mat4 proj_mat;        // Camera projection matrix
 			glm::mat4 view_mat;        // Camera view matrix
+			glm::mat4 prev_view_proj_mat;  // Previous frame view-projection matrix
 			float max_scene_distance;  // farthest viewable distance in the scene
 			float distance_attenuation;  // attenuation factor for distance
 		};
@@ -35,15 +36,17 @@ namespace pipeline
 			const target::SSGI& ssgi_target,
 			const Param& param,
 			glm::u32vec2 resolution
-		) noexcept;
+		) const noexcept;
 
 	  private:
 
-		struct Internal_param
+		struct Initial_sample_param
 		{
 			glm::mat4 inv_proj_mat;
 			glm::mat4 proj_mat;
+			glm::mat4 inv_view_mat;
 			glm::mat4 view_mat;
+			glm::mat4 back_proj_mat;
 
 			glm::vec4 inv_proj_mat_col3;
 			glm::vec4 inv_proj_mat_col4;
@@ -56,22 +59,33 @@ namespace pipeline
 			float max_scene_distance;  // farthest viewable distance in the scene
 			float distance_attenuation;  // attenuation factor for distance
 
-			static Internal_param from_param(const Param& param, const glm::uvec2& resolution) noexcept;
+			static Initial_sample_param from_param(const Param& param, const glm::uvec2& resolution) noexcept;
 		};
 
 		gpu::Compute_pipeline ssgi_pipeline;
-		gpu::Sampler noise_sampler, nearest_sampler;
+		gpu::Sampler noise_sampler, nearest_sampler, linear_sampler;
 		gpu::Texture noise_texture;
+
+		std::expected<void, util::Error> run_initial_sample(
+			const gpu::Command_buffer& command_buffer,
+			const target::Light_buffer& light_buffer,
+			const target::Gbuffer& gbuffer,
+			const target::SSGI& ssgi_target,
+			const Param& param,
+			glm::u32vec2 resolution
+		) const noexcept;
 
 		SSGI(
 			gpu::Compute_pipeline ssgi_pipeline,
 			gpu::Sampler noise_sampler,
 			gpu::Sampler nearest_sampler,
+			gpu::Sampler linear_sampler,
 			gpu::Texture noise_texture
 		) :
 			ssgi_pipeline(std::move(ssgi_pipeline)),
 			noise_sampler(std::move(noise_sampler)),
 			nearest_sampler(std::move(nearest_sampler)),
+			linear_sampler(std::move(linear_sampler)),
 			noise_texture(std::move(noise_texture))
 		{}
 
