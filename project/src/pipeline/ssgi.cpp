@@ -120,7 +120,7 @@ namespace pipeline
 
 		const gpu::Compute_pipeline::Create_info pipeline_create_info{
 			.shader_data = shader_asset::ssgi_trace_comp,
-			.num_samplers = 10,
+			.num_samplers = 9,
 			.num_readwrite_storage_textures = 4,
 			.num_uniform_buffers = 1,
 			.threadcount_x = 8,
@@ -231,7 +231,6 @@ namespace pipeline
 					gbuffer.depth_value_texture.current().bind_with_sampler(nearest_sampler),
 					gbuffer.lighting_info_texture->bind_with_sampler(nearest_sampler),
 					noise_texture.bind_with_sampler(noise_sampler),
-					gbuffer.albedo_texture->bind_with_sampler(nearest_sampler),
 					gbuffer.depth_value_texture.prev().bind_with_sampler(linear_sampler),
 
 					ssgi_target.temporal_reservoir_texture1.prev().bind_with_sampler(nearest_sampler),

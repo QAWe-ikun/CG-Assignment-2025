@@ -26,47 +26,47 @@ namespace target
 	///
 	struct SSGI
 	{
-		static constexpr gpu::Texture::Format temporal_reservoir_texture1_format = {
+		static constexpr gpu::Texture::Format reservoir_texture1_format = {
 			.type = SDL_GPU_TEXTURETYPE_2D,
 			.format = SDL_GPU_TEXTUREFORMAT_R32G32B32A32_FLOAT,
 			.usage = {.sampler = true, .compute_storage_read = true, .compute_storage_write = true}
 		};
 
-		static constexpr gpu::Texture::Format temporal_reservoir_texture2_format = {
+		static constexpr gpu::Texture::Format reservoir_texture2_format = {
 			.type = SDL_GPU_TEXTURETYPE_2D,
 			.format = SDL_GPU_TEXTUREFORMAT_R32G32B32A32_UINT,
 			.usage = {.sampler = true, .compute_storage_read = true, .compute_storage_write = true}
 		};
 
-		static constexpr gpu::Texture::Format temporal_reservoir_texture3_format = {
+		static constexpr gpu::Texture::Format reservoir_texture3_format = {
 			.type = SDL_GPU_TEXTURETYPE_2D,
 			.format = SDL_GPU_TEXTUREFORMAT_R32G32B32A32_UINT,
 			.usage = {.sampler = true, .compute_storage_read = true, .compute_storage_write = true}
 		};
 
-		static constexpr gpu::Texture::Format temporal_reservoir_texture4_format = {
+		static constexpr gpu::Texture::Format reservoir_texture4_format = {
 			.type = SDL_GPU_TEXTURETYPE_2D,
 			.format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
 			.usage = {.sampler = true, .compute_storage_read = true, .compute_storage_write = true}
 		};
 
 		graphics::Cycle_texture temporal_reservoir_texture1{
-			temporal_reservoir_texture1_format,
+			reservoir_texture1_format,
 			"SSGI Temporal Reservoir Texture 1"
 		};
 
 		graphics::Cycle_texture temporal_reservoir_texture2{
-			temporal_reservoir_texture2_format,
+			reservoir_texture2_format,
 			"SSGI Temporal Reservoir Texture 2"
 		};
 
 		graphics::Cycle_texture temporal_reservoir_texture3{
-			temporal_reservoir_texture3_format,
+			reservoir_texture3_format,
 			"SSGI Temporal Reservoir Texture 3"
 		};
 
 		graphics::Cycle_texture temporal_reservoir_texture4{
-			temporal_reservoir_texture4_format,
+			reservoir_texture4_format,
 			"SSGI Temporal Reservoir Texture 4"
 		};
 
