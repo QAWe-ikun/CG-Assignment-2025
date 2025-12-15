@@ -78,11 +78,6 @@ vec2 ray_rect_intersect(vec2 P, vec2 d, vec4 rect)
     vec2 t_enter = min(ts.xz, ts.yw);
     vec2 t_exit = max(ts.xz, ts.yw);
 
-    t_enter.x = isnan(t_enter.x) || isinf(t_enter.x) ? FLT_LOWEST : t_enter.x;
-    t_enter.y = isnan(t_enter.y) || isinf(t_enter.y) ? FLT_LOWEST : t_enter.y;
-    t_exit.x = isnan(t_exit.x) || isinf(t_exit.x) ? FLT_HIGHEST : t_exit.x;
-    t_exit.y = isnan(t_exit.y) || isinf(t_exit.y) ? FLT_HIGHEST : t_exit.y;
-
     float t_enter_d = max(t_enter.x, t_enter.y);
     float t_exit_d = min(t_exit.x, t_exit.y);
 

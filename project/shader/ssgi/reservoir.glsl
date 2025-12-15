@@ -27,13 +27,9 @@ Reservoir decode_reservoir(vec4 tex1, uvec4 tex2, uvec4 tex3, vec4 tex4)
 {
     Reservoir reservoir;
 
-    reservoir.w = tex1.x;
-    reservoir.M = tex1.y;
-    reservoir.W = tex1.z;
-
-    if (isnan(reservoir.w) || isinf(reservoir.w)) reservoir.w = 0.0;
-    if (isnan(reservoir.M) || isinf(reservoir.M)) reservoir.M = 0.0;
-    if (isnan(reservoir.W) || isinf(reservoir.W)) reservoir.W = 0.0;
+    reservoir.w = clamp(tex1.x, 0.0, 1048576.0);
+    reservoir.M = clamp(tex1.y, 0.0, 1048576.0);
+    reservoir.W = clamp(tex1.z, 0.0, 1048576.0);
 
     reservoir.hit_normal = octToNormal(unpackSnorm2x16(tex2.w));
     reservoir.hit_position = vec3(
@@ -107,17 +103,11 @@ void update_reservoir(
 
 void clamp_reservoir(inout Reservoir reservoir, float M_max)
 {
-    if (M_max <= 0.0) return;
     if (reservoir.M > M_max)
     {
         float scale = M_max / reservoir.M;
-        reservoir.w *= scale;
+        reservoir.w = clamp(reservoir.w * scale, 0.0, 1048576.0);
         reservoir.M = M_max;
-
-        // sanitize numeric issues
-        if (isnan(reservoir.w) || isinf(reservoir.w)) reservoir.w = 0.0;
-        if (isnan(reservoir.M) || isinf(reservoir.M)) reservoir.M = M_max;
-        // reservoir.W remains valid because scaling preserves W = w/(M*p_hat)
     }
 }
 
