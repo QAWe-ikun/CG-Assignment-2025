@@ -3,6 +3,7 @@
 
 #extension GL_GOOGLE_include_directive : enable
 #include "../common/oct.glsl"
+#include "../common/pbr.glsl"
 
 precision highp float;
 
@@ -87,7 +88,7 @@ void encode_reservoir(Reservoir reservoir, out vec4 tex1, out uvec4 tex2, out uv
     tex4 = vec4(reservoir.z.hit_luminance, 0.0);
 }
 
-float p_hat_at(Sample z, vec3 W_pos, vec3 W_normal)
+float p_hat_at(Sample z, vec3 W_pos, vec3 W_normal, vec3 W_view_dir, float roughness)
 {
     return dot(z.hit_luminance.rgb, vec3(0.2126, 0.7152, 0.0722));
 }
@@ -139,7 +140,7 @@ float jacobian_determinant(
     return (curr_cos_phi / prev_cos_phi) * (dot(prev_dir, prev_dir) / dot(curr_dir, curr_dir));
 }
 
-void merge_reservoir(inout Reservoir target, Reservoir source, float p_hat, float noise)
+void merge_reservoir(inout Reservoir target, Reservoir source, float p_hat, float noise, float roughness, vec3 W_curr_pos, vec3 W_curr_normal, vec3 W_view_dir)
 {
     // Aggregate source contribution as if source.M independent samples
     float w_new = p_hat * source.W * source.M; // aggregated importance from source
@@ -161,7 +162,7 @@ void merge_reservoir(inout Reservoir target, Reservoir source, float p_hat, floa
 
     if (updated)
     {
-        float denom = target.M * p_hat_at(target.z, target.z.start_position, target.z.start_normal);
+        float denom = target.M * p_hat_at(target.z, W_curr_pos, W_curr_normal, W_view_dir, roughness);
         if (denom > 0.0)
             target.W = target.w / denom;
         else

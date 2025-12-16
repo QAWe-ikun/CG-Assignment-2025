@@ -37,6 +37,7 @@ layout(std140, set = 2, binding = 0) uniform Params
     mat4 prev_view_proj_mat;
     mat4 proj_mat;
     mat4 view_mat;
+    mat4 inv_view_mat;
     vec4 inv_proj_mat_col3;
     vec4 inv_proj_mat_col4;
 
@@ -137,6 +138,7 @@ void main()
     const vec3 V_curr_pos = V_curr_pos_h.xyz / V_curr_pos_h.w;
     const GBufferLighting lighting = unpack_gbuffer_lighting(texelFetch(light_info_tex, full_coord, 0).rg);
     const vec3 W_curr_normal = lighting.normal;
+    const vec3 W_view_dir = normalize(W_curr_pos - inv_view_mat[3].xyz);
 
     Reservoir reservoir = acquire_previous_reservoir(comp_coord, full_coord, W_curr_pos);
 
@@ -198,13 +200,26 @@ void main()
                 W_curr_pos
             );
 
-        const float p_hat_q = p_hat_at(neighbor_reservoir.z, W_curr_pos, W_curr_normal) / clamp(jacobian, 0.5, 10.0);
+        const float p_hat_q = p_hat_at(
+            neighbor_reservoir.z, 
+            W_curr_pos, 
+            W_curr_normal,
+            W_view_dir,
+            lighting.roughness
+        ) / clamp(jacobian, 0.5, 10.0);
+
+        neighbor_reservoir.z.start_position = W_curr_pos;
+        neighbor_reservoir.z.start_normal = W_curr_normal;
 
         merge_reservoir(
             reservoir,
             neighbor_reservoir,
             p_hat_q,
-            noise.z
+            noise.z,
+            lighting.roughness,
+            W_curr_pos,
+            W_curr_normal,
+            W_view_dir
         );
     }
 

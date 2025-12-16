@@ -85,6 +85,7 @@ namespace pipeline
 			.prev_view_proj_mat = param.prev_view_proj_mat,
 			.proj_mat = param.proj_mat,
 			.view_mat = param.view_mat,
+			.inv_view_mat = glm::inverse(param.view_mat),
 			.inv_proj_mat_col3 = inv_proj_mat[2],
 			.inv_proj_mat_col4 = inv_proj_mat[3],
 			.comp_resolution = (resolution + 1u) / 2u,

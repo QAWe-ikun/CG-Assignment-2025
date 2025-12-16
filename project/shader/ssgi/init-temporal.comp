@@ -148,6 +148,7 @@ void main()
     const vec3 V_normal = W_to_V_vec(lighting.normal); // Pixel Normal at view space
     const vec3 V_eye_to_pixel = normalize(V_pos); // View direction at view space
     const vec3 V_pixel_to_eye = -V_eye_to_pixel;
+    const vec3 W_view_dir = normalize(W_start_pos - inv_view_mat[3].xyz);
 
     /* Fetch Previous Reservoir */
 
@@ -249,7 +250,13 @@ void main()
         );
     }
 
-    const float p_hat = p_hat_at(hit_sample, W_start_pos, W_start_normal) + 1e-2;
+    const float p_hat = p_hat_at(
+        hit_sample, 
+        W_start_pos, 
+        W_start_normal, 
+        W_view_dir, 
+        lighting.roughness
+    ) + 1e-2;
     const float w_new = p_hat / p;
 
     const bool updated = update_reservoir(

@@ -68,6 +68,7 @@ namespace pipeline
 			glm::mat4 prev_view_proj_mat;
 			glm::mat4 proj_mat;
 			glm::mat4 view_mat;
+			glm::mat4 inv_view_mat;
 			glm::vec4 inv_proj_mat_col3;
 			glm::vec4 inv_proj_mat_col4;
 
