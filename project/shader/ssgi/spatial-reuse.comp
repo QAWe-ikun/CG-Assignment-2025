@@ -180,14 +180,14 @@ void main()
 
         const float normal_similarity = dot(
                 normalize(neighbor_reservoir.z.start_normal),
-                normalize(W_curr_normal)
+                W_curr_normal
             );
 
         const float W_distance = length(W_neighbor_pos - W_curr_pos);
         const float distance_tolerance = 0.05 - 0.05 * V_curr_pos.z;
         const float hemisphere_visibility = dot(
                 normalize(neighbor_reservoir.z.hit_position - W_curr_pos),
-                normalize(W_curr_normal)
+                W_curr_normal
             );
 
         if (normal_similarity < 0.8 || W_distance > distance_tolerance || hemisphere_visibility < 0.0)

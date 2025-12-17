@@ -102,7 +102,7 @@ void main()
 
         if (distance(prev_depth_sample, NDC_prev.z) / prev_depth_sample < 0.01)
         {
-            const ivec2 PUV_prev = ivec2(UV_prev * vec2(comp_resolution));
+            const ivec2 PUV_prev = ivec2(floor(UV_prev * vec2(comp_resolution)));
             float min_distance = FLT_HIGHEST;
             int min_distance_index;
 
