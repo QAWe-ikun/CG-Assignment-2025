@@ -3,6 +3,7 @@
 #include "asset/shader/init-temporal.comp.hpp"
 #include "asset/shader/radiance-add.frag.hpp"
 #include "asset/shader/radiance-composite.comp.hpp"
+#include "asset/shader/radiance-upsample.comp.hpp"
 #include "asset/shader/spatial-reuse.comp.hpp"
 #include "gpu/compute-pass.hpp"
 #include "gpu/compute-pipeline.hpp"
@@ -114,6 +115,19 @@ namespace pipeline
 			.comp_resolution = (resolution + 1u) / 2u,
 			.full_resolution = resolution,
 			.blend_factor = param.blend_factor
+		};
+	}
+
+	SSGI::Radiance_upsample_param SSGI::Radiance_upsample_param::from_param(
+		const Param& param,
+		glm::u32vec2 resolution
+	) noexcept
+	{
+		return Radiance_upsample_param{
+			.inv_view_proj_mat_col3 = glm::inverse(param.proj_mat * param.view_mat)[2],
+			.inv_view_proj_mat_col4 = glm::inverse(param.proj_mat * param.view_mat)[3],
+			.comp_resolution = (resolution + 1u) / 2u,
+			.full_resolution = resolution
 		};
 	}
 
@@ -230,6 +244,24 @@ namespace pipeline
 				"Create SSGI radiance composite pipeline failed"
 			);
 
+		auto radiance_upsample_pipeline = gpu::Compute_pipeline::create(
+			device,
+			gpu::Compute_pipeline::Create_info{
+				.shader_data = shader_asset::radiance_upsample_comp,
+				.num_samplers = 4,
+				.num_readwrite_storage_textures = 1,
+				.num_uniform_buffers = 1,
+				.threadcount_x = 16,
+				.threadcount_y = 16,
+				.threadcount_z = 1
+			},
+			"SSGI Radiance Upsample Pipeline"
+		);
+		if (!radiance_upsample_pipeline)
+			return radiance_upsample_pipeline.error().forward(
+				"Create SSGI radiance upsample pipeline failed"
+			);
+
 		const auto radiance_add_shader = gpu::Graphics_shader::create(
 			device,
 			shader_asset::radiance_add_frag,
@@ -258,6 +290,7 @@ namespace pipeline
 			std::move(*initial_pipeline),
 			std::move(*spatial_reuse_pipeline),
 			std::move(*radiance_composite_pipeline),
+			std::move(*radiance_upsample_pipeline),
 			std::move(*radiance_add_pass),
 			std::move(*noise_sampler),
 			std::move(*nearest_sampler),
@@ -295,6 +328,11 @@ namespace pipeline
 		const auto radiance_add_result =
 			this->render_radiance_add(command_buffer, light_buffer, ssgi_target, resolution);
 		if (!radiance_add_result) return radiance_add_result.error().forward("Run SSGI radiance add failed");
+
+		const auto radiance_upsample_result =
+			this->run_radiance_upsample(command_buffer, gbuffer, ssgi_target, param, resolution);
+		if (!radiance_upsample_result)
+			return radiance_upsample_result.error().forward("Run SSGI radiance upsample failed");
 
 		command_buffer.pop_debug_group();
 
@@ -527,6 +565,51 @@ namespace pipeline
 		return std::move(result).transform_error(util::Error::forward_fn("Radiance composite pass failed"));
 	}
 
+	std::expected<void, util::Error> SSGI::run_radiance_upsample(
+		const gpu::Command_buffer& command_buffer,
+		const target::Gbuffer& gbuffer,
+		const target::SSGI& ssgi_target,
+		const Param& param,
+		glm::u32vec2 resolution
+	) const noexcept
+	{
+		const Radiance_upsample_param radiance_upsample_param =
+			Radiance_upsample_param::from_param(param, resolution);
+		command_buffer.push_uniform_to_compute(0, util::as_bytes(radiance_upsample_param));
+
+		const auto dispatch_size = (radiance_upsample_param.full_resolution + 15u) / 16u;
+
+		const SDL_GPUStorageTextureReadWriteBinding write_binding_texture{
+			.texture = *ssgi_target.fullres_radiance_texture,
+			.mip_level = 0,
+			.layer = 0,
+			.cycle = true,
+			.padding1 = 0,
+			.padding2 = 0,
+			.padding3 = 0
+		};
+
+		command_buffer.push_debug_group("Radiance Upsample Pass");
+		auto result = command_buffer.run_compute_pass(
+			std::array{write_binding_texture},
+			{},
+			[this, &ssgi_target, &gbuffer, dispatch_size](const gpu::Compute_pass& compute_pass) {
+				compute_pass.bind_pipeline(radiance_upsample_pipeline);
+				compute_pass.bind_samplers(
+					0,
+					ssgi_target.radiance_texture.current().bind_with_sampler(nearest_sampler),
+					gbuffer.depth_value_texture.current().bind_with_sampler(nearest_sampler),
+					gbuffer.albedo_texture->bind_with_sampler(nearest_sampler),
+					gbuffer.lighting_info_texture->bind_with_sampler(nearest_sampler)
+				);
+				compute_pass.dispatch(dispatch_size.x, dispatch_size.y, 1);
+			}
+		);
+		command_buffer.pop_debug_group();
+
+		return std::move(result).transform_error(util::Error::forward_fn("Radiance upsample pass failed"));
+	}
+
 	std::expected<void, util::Error> SSGI::render_radiance_add(
 		const gpu::Command_buffer& command_buffer,
 		const target::Light_buffer& light_buffer,
@@ -538,7 +621,7 @@ namespace pipeline
 		auto result = radiance_add_pass.render(
 			command_buffer,
 			light_buffer.light_texture.current(),
-			std::array{ssgi_target.radiance_texture.current().bind_with_sampler(linear_sampler)},
+			std::array{ssgi_target.fullres_radiance_texture->bind_with_sampler(linear_sampler)},
 			{},
 			{}
 		);

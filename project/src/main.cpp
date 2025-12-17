@@ -506,7 +506,7 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 				render_resource.debug_pipeline.render_channels(
 					command_buffer,
 					swapchain_pass,
-					render_resource.ssgi_target.radiance_texture.current(),
+					*render_resource.ssgi_target.fullres_radiance_texture,
 					swapchain_size,
 					4
 				);

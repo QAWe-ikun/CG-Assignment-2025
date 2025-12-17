@@ -98,6 +98,11 @@ namespace target
 
 		graphics::Cycle_texture radiance_texture{radiance_texture_format, "SSGI Radiance Texture"};
 
+		graphics::Auto_texture fullres_radiance_texture{
+			radiance_texture_format,
+			"SSGI Fullres Radiance Texture"
+		};
+
 		///
 		/// @brief Resize SSGI render targets
 		///

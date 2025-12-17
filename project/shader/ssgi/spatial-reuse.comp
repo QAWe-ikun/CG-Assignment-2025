@@ -159,11 +159,12 @@ void main()
         if (any(lessThan(neighbor_coord, ivec2(0))) || any(greaterThanEqual(neighbor_coord, ivec2(comp_resolution))))
             continue;
 
+        const float neighbor_depth = texelFetch(depth_tex, neighbor_coord << 1, 0).r;
+
         const vec4 neighbor_reservoir_tex1 = texelFetch(temporal_reservoir_tex1, neighbor_coord, 0);
         const uvec4 neighbor_reservoir_tex2 = texelFetch(temporal_reservoir_tex2, neighbor_coord, 0);
         const uvec4 neighbor_reservoir_tex3 = texelFetch(temporal_reservoir_tex3, neighbor_coord, 0);
         const vec4 neighbor_reservoir_tex4 = texelFetch(temporal_reservoir_tex4, neighbor_coord, 0);
-        const float neighbor_depth = texelFetch(depth_tex, neighbor_coord << 1, 0).r;
         if (neighbor_depth == 0.0)
             continue;
 
@@ -250,7 +251,7 @@ void main()
         reservoir = decode_reservoir(temp_tex1, temp_tex2, temp_tex3, temp_tex4);
     }
 
-    clamp_reservoir(reservoir, 1000);
+    clamp_reservoir(reservoir, 500);
 
     vec4 tex1;
     uvec4 tex2;
