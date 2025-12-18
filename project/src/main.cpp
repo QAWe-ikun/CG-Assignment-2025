@@ -8,7 +8,6 @@
 #include <imgui.h>
 #include <iostream>
 #include <print>
-#include <vulkan/vulkan_core.h>
 
 #include "backend/imgui.hpp"
 #include "backend/loop.hpp"
@@ -125,8 +124,8 @@ try
 	std::span<const char*> args(argv, argc);
 	if (args.size() != 2)
 	{
-		argv[1] = "/mnt/Dev/Dev/Art/glTF-Sample-Models-main/2.0/Sponza/sponza-tangent.glb";
-		args = std::span<const char*>(argv, 2);
+		std::println(std::cerr, "No path specified!");
+		return EXIT_FAILURE;
 	}
 
 	/* 初始化 */

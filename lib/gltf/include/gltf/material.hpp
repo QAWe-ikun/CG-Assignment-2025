@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <optional>
+#include <span>
 #include <tiny_gltf.h>
 
 #include "gpu/sampler.hpp"

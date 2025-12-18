@@ -4,8 +4,10 @@
 #include "asset/shader/copy-2.frag.hpp"
 #include "asset/shader/copy-4.frag.hpp"
 #include "gpu/graphics-pipeline.hpp"
+
 #include <SDL3/SDL_gpu.h>
 #include <format>
+#include <array>
 
 namespace graphics
 {

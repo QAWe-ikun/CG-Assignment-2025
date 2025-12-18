@@ -21,7 +21,7 @@ add_defines("TINYGLTF_NOEXCEPTION")
 
 -- Packages
 add_requires(
-	"libsdl3 main",
+	"libsdl3 vulkan-options",
 	"glm 1.0.2",
 	"gzip-hpp v0.1.0",
 	"stb 2025.03.14",
@@ -35,9 +35,9 @@ add_requires(
 	"imgui v1.92.1-docking", 
 	{configs={sdl3=true, sdl3_gpu=true, wchar32=true}}
 )
-add_requireconfs("imgui.libsdl3", {override=true, version="main"})
+add_requireconfs("imgui.libsdl3", {override=true, version="vulkan-options"})
 add_requireconfs("boost", {configs={cmake=false}})
 
 -- Rules, Tasks and subprojects
-includes("xmake/rule", "xmake/task/*.lua")
+includes("xmake/rule", "xmake/task/*.lua", "xmake/*.lua")
 includes("project", "lib", "render")

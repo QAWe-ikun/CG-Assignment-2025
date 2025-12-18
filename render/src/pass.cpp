@@ -2,6 +2,7 @@
 #include "render/pass.hpp"
 
 #include <SDL3/SDL_gpu.h>
+#include <array>
 
 namespace render
 {
@@ -203,7 +204,7 @@ namespace render
 			.padding2 = 0
 		};
 
-		const std::array color_targets = {swapchain_target_info};
+		const std::array color_targets = std::to_array({swapchain_target_info});
 
 		return command_buffer.begin_render_pass(color_targets, std::nullopt);
 	}
