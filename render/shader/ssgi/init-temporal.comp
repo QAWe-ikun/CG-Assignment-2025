@@ -24,7 +24,7 @@ layout(set = 0, binding = 6) uniform usampler2D prev_temporal_reservoir_tex2;
 layout(set = 0, binding = 7) uniform usampler2D prev_temporal_reservoir_tex3;
 layout(set = 0, binding = 8) uniform sampler2D prev_temporal_reservoir_tex4;
 
-layout(set = 1, binding = 0, rgba32f) uniform writeonly image2D temporal_reservoir_tex1;
+layout(set = 1, binding = 0, rgba16f) uniform writeonly image2D temporal_reservoir_tex1;
 layout(set = 1, binding = 1, rgba32ui) uniform writeonly uimage2D temporal_reservoir_tex2;
 layout(set = 1, binding = 2, rgba32ui) uniform writeonly uimage2D temporal_reservoir_tex3;
 layout(set = 1, binding = 3, rgba16f) uniform writeonly image2D temporal_reservoir_tex4;
@@ -208,16 +208,17 @@ void main()
         );
 
     const Hit_result trace_result = raytrace(
-        V_pos, 
-        normalize(V_march_dir), 
-        PUV_coord, 
-        resolution_ivec, 
+        V_pos,
+        normalize(V_march_dir),
+        PUV_coord,
+        resolution_ivec,
         proj_mat,
         inv_proj_mat_col3,
         inv_proj_mat_col4,
         near_plane_span,
         near_plane,
-        depth_tex
+        depth_tex,
+        80
     );
 
     const float p = 1.0 / (2.0 * PI);
@@ -251,10 +252,10 @@ void main()
     }
 
     const float p_hat = p_hat_at(
-        hit_sample, 
-        W_start_pos, 
-        W_start_normal, 
-        W_view_dir, 
+        hit_sample,
+        W_start_pos,
+        W_start_normal,
+        W_view_dir,
         lighting.roughness
     ) + 1e-2;
     const float w_new = p_hat / p;
