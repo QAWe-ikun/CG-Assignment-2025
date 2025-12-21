@@ -88,7 +88,7 @@ vec4 get_hiz_pixelcoord_boundary(int hiz_level, ivec2 hiz_resolution, ivec2 hiz_
 {
     int hiz_size = 1 << hiz_level;
     bvec2 coord_at_edge = equal(hiz_coord + 1, hiz_resolution);
-    vec2 size = mix(vec2(hiz_size.xx), vec2(hiz_size.xx << 1), vec2(coord_at_edge));
+    vec2 size = mix(vec2(hiz_size), vec2(hiz_size << 1), vec2(coord_at_edge));
     return vec4(
         vec2(hiz_coord * hiz_size),
         vec2(hiz_coord * hiz_size) + size
@@ -120,6 +120,7 @@ Hit_result raytrace(
     int hit_skips = 0;
 
     const vec2 resolution_vec = vec2(resolution_ivec);
+    const vec2 resolution_vec_inv = 1.0 / resolution_vec;
 
     for (int iter = 0; iter < MAX_ITER; iter++)
     {
@@ -134,9 +135,6 @@ Hit_result raytrace(
         const ivec2 UV_hiz_texel_coord = ivec2(floor(PUV_traverse)) >> hiz_level;
         const float P_hiz_depth = texelFetch(depth_tex, UV_hiz_texel_coord, hiz_level).r;
 
-        const vec4 V_hiz_depth = fma(P_hiz_depth.xxxx, inv_proj_mat_col3, inv_proj_mat_col4);
-        const float V_hiz_depth_z = -V_hiz_depth.z / V_hiz_depth.w;
-
         /* Compute Intersection with Hi-Z Pixel Boundary */
 
         const vec4 hiz_boundary = get_hiz_pixelcoord_boundary(hiz_level, hiz_level_res, UV_hiz_texel_coord);
@@ -145,11 +143,11 @@ Hit_result raytrace(
         const float t_enter = t_bounds.x;
         const float t_exit = t_bounds.y;
 
-        const vec2 PUV_traverse_enter = fma(PUV_unit_step, t_bounds.xx, PUV_initial);
-        const vec2 PUV_traverse_exit = fma(PUV_unit_step, t_bounds.yy, PUV_initial);
+        const vec2 PUV_traverse_enter = PUV_unit_step * t_enter + PUV_initial;
+        const vec2 PUV_traverse_exit = PUV_unit_step * t_exit + PUV_initial;
 
-        const vec2 UV_traverse_enter = PUV_traverse_enter / resolution_vec;
-        const vec2 UV_traverse_exit = PUV_traverse_exit / resolution_vec;
+        const vec2 UV_traverse_enter = PUV_traverse_enter * resolution_vec_inv;
+        const vec2 UV_traverse_exit = PUV_traverse_exit * resolution_vec_inv;
 
         const vec3 V_traverse_enter_nearplane = vec3(uv_to_ndc(UV_traverse_enter) * near_plane_span, -near_plane);
         const vec3 V_traverse_exit_nearplane = vec3(uv_to_ndc(UV_traverse_exit) * near_plane_span, -near_plane);
@@ -160,7 +158,9 @@ Hit_result raytrace(
         const float V_traverse_enter_depth = -V_traverse_enter.z;
         const float V_traverse_exit_depth = -V_traverse_exit.z;
 
-        const vec2 UV_traverse = PUV_traverse / resolution_vec;
+        const vec4 V_hiz_depth = inv_proj_mat_col3 * P_hiz_depth + inv_proj_mat_col4;
+
+        const vec2 UV_traverse = PUV_traverse * resolution_vec_inv;
 
         /* Precompute conditions */
 
@@ -170,6 +170,8 @@ Hit_result raytrace(
 
         const bool next_pixcoord_out_of_bounds = any(greaterThanEqual(PUV_next_traverse, resolution_vec))
                 || any(lessThan(PUV_next_traverse, vec2(0.0)));
+
+        const float V_hiz_depth_z = -V_hiz_depth.z / V_hiz_depth.w;
 
         const bool hiz_empty = P_hiz_depth == 0.0;
         const bool t_outofbounds = any(lessThan(t_bounds, vec2(0.0)));
