@@ -20,7 +20,18 @@ namespace graphics::camera
 		double t
 	) noexcept
 	{
-		return {.azimuth = glm::mix(a.azimuth, b.azimuth, t), .pitch = glm::mix(a.pitch, b.pitch, t)};
+		const auto azimuth_a = glm::mod(a.azimuth, glm::two_pi<double>());
+		const auto azimuth_b = glm::mod(b.azimuth, glm::two_pi<double>());
+
+		double azimuth_diff = glm::mod(azimuth_b + glm::two_pi<double>() - azimuth_a, glm::two_pi<double>());
+		if (azimuth_diff > glm::pi<double>()) azimuth_diff -= glm::two_pi<double>();
+
+		const auto interpolated_azimuth = glm::mix(a.azimuth, a.azimuth + azimuth_diff, t);
+
+		return {
+			.azimuth = glm::mod(interpolated_azimuth, glm::two_pi<double>()),
+			.pitch = glm::mix(a.pitch, b.pitch, t)
+		};
 	}
 
 	Spherical_angle Spherical_angle::rotate(
