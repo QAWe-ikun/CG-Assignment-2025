@@ -71,7 +71,10 @@ static std::expected<gltf::Model, util::Error> create_scene_from_model(
 			break;
 		}
 
-		ImGui::ProgressBar(current.progress.value_or(-ImGui::GetTime()), ImVec2(300.0f, 0.0f));
+		ImGui::ProgressBar(
+			current.progress < 0 ? (-ImGui::GetTime()) : current.progress,
+			ImVec2(300.0f, 0.0f)
+		);
 	});
 	if (!gltf_result) return gltf_result.error().forward("Load gltf model failed");
 
