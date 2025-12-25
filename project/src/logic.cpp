@@ -53,16 +53,19 @@ void Logic::statistic_display_ui() const noexcept
 	ImGui::Text("FPS: %.1f FPS", io.Framerate);
 }
 
-void Logic::debug_control_ui() noexcept
+void Logic::animation_control_ui() noexcept
 {
-	ImGui::SeparatorText("调试");
+	ImGui::SeparatorText("动画");
 
-	ImGui::DragFloat("时间", &time, 0.01f, 0.0f, 1000.0f);
+	ImGui::SliderFloat("门1", &door1_position, 0.0f, 1.0f);
+	ImGui::SliderFloat("门2", &door2_position, 0.0f, 1.0f);
+	ImGui::SliderFloat("门3", &door3_position, 0.0f, 1.0f);
+	ImGui::SliderFloat("门4", &door4_position, 0.0f, 1.0f);
 
-	if (ImGui::Button("播放/暂停")) time_run = !time_run;
-	if (ImGui::Button("重置时间")) time = 0.0f;
+	ImGui::Separator();
 
-	if (time_run) time += ImGui::GetIO().DeltaTime;
+	ImGui::SliderFloat("左窗帘", &curtain_left_position, 0.0f, 1.0f);
+	ImGui::SliderFloat("右窗帘", &curtain_right_position, 0.0f, 1.0f);
 }
 
 std::tuple<render::Params, std::vector<gltf::Drawdata>> Logic::logic(
@@ -77,7 +80,7 @@ std::tuple<render::Params, std::vector<gltf::Drawdata>> Logic::logic(
 		light_control_ui();
 		antialias_control_ui();
 		statistic_display_ui();
-		debug_control_ui();
+		animation_control_ui();
 	}
 	ImGui::End();
 
@@ -88,8 +91,12 @@ std::tuple<render::Params, std::vector<gltf::Drawdata>> Logic::logic(
 	);
 
 	std::vector<gltf::Animation_key> animation_keys;
-	for (const auto idx : std::views::iota(0zu, model.get_animations().size()))
-		animation_keys.push_back(gltf::Animation_key{.animation = uint32_t(idx), .time = time});
+	animation_keys.emplace_back("Door1", door1_position * max_door_time);
+	animation_keys.emplace_back("Door2", door2_position * max_door_time);
+	animation_keys.emplace_back("Door3", door3_position * max_door_time);
+	animation_keys.emplace_back("Door4", door4_position * max_door_time);
+	animation_keys.emplace_back("CurtainLeft", curtain_left_position * max_curtain_time);
+	animation_keys.emplace_back("CurtainRight", curtain_right_position * max_curtain_time);
 
 	std::vector<gltf::Drawdata> drawdata_list;
 	drawdata_list.emplace_back(model.generate_drawdata(glm::mat4(1.0f), animation_keys));

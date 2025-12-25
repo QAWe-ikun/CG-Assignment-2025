@@ -43,12 +43,20 @@ class Logic
 
 	void statistic_display_ui() const noexcept;
 
-	/* Debug */
+	/* Animations */
 
-	float time = 0.0f;
-	bool time_run = false;
+	const float max_door_time = 53.0f / 24.0f;     // seconds
+	const float max_curtain_time = 72.0f / 24.0f;  // seconds
 
-	void debug_control_ui() noexcept;
+	float door1_position = 0.0f;
+	float door2_position = 0.0f;
+	float door3_position = 0.0f;
+	float door4_position = 0.0f;
+
+	float curtain_left_position = 0.0f;
+	float curtain_right_position = 0.0f;
+
+	void animation_control_ui() noexcept;
 
   public:
 
