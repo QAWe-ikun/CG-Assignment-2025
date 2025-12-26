@@ -45,20 +45,37 @@ class Logic
 
 	/* Animations */
 
-	const float max_door_time = 53.0f / 24.0f;     // seconds
+	const float max_door_time = 53.0f / 24.0f;  // seconds
+	const float max_door5_time = 5.0;
 	const float max_curtain_time = 72.0f / 24.0f;  // seconds
 
 	float door1_position = 0.0f;
 	float door2_position = 0.0f;
 	float door3_position = 0.0f;
 	float door4_position = 0.0f;
+	float door5_position = 0.0f;
 
 	float curtain_left_position = 0.0f;
 	float curtain_right_position = 0.0f;
 
+	uint32_t door1_node_index = 0;
+	uint32_t door2_node_index = 0;
+	uint32_t door3_node_index = 0;
+	uint32_t door4_node_index = 0;
+	uint32_t door5_node_index = 0;
+
 	void animation_control_ui() noexcept;
 
+	Logic() = default;
+
   public:
+
+	Logic(const Logic&) = default;
+	Logic(Logic&&) = default;
+	Logic& operator=(const Logic&) = delete;
+	Logic& operator=(Logic&&) = delete;
+
+	static std::expected<Logic, util::Error> create(const gltf::Model& model) noexcept;
 
 	std::tuple<render::Params, std::vector<gltf::Drawdata>> logic(
 		const backend::SDL_context& context,

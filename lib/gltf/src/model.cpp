@@ -435,17 +435,34 @@ namespace gltf
 	) const noexcept
 	{
 		const auto node_overrides = compute_node_overrides(animation);
-		const auto node_world_matrices = compute_node_world_matrices(model_transform, node_overrides);
+		auto node_world_matrices = compute_node_world_matrices(model_transform, node_overrides);
 		auto drawdata_list = compute_drawcalls(node_world_matrices);
 		auto joint_matrices = skin_list.compute_joint_matrices(node_world_matrices);
 
 		return {
 			.drawcalls = std::move(drawdata_list),
+			.node_matrices = std::move(node_world_matrices),
 			.deferred_skin_resource = joint_matrices.empty()
 				? nullptr
 				: std::make_shared<Deferred_skinning_resource>(std::move(joint_matrices)),
 			.material_cache = material_bind_cache->ref()
 		};
+	}
+
+	std::optional<uint32_t> Model::find_node_by_name(const std::string& name) const noexcept
+	{
+		const auto found =
+			nodes
+			| std::views::enumerate
+			| std::views::filter([&](const auto& pair) {
+				  const auto& [idx, node] = pair;
+				  return node.name.has_value() && *node.name == name;
+			  })
+			| std::ranges::to<std::vector>();
+
+		if (found.size() != 1) return std::nullopt;
+
+		return std::get<0>(found[0]);
 	}
 
 	std::expected<tinygltf::Model, util::Error> load_tinygltf_model(

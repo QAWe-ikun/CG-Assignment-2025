@@ -72,6 +72,7 @@ namespace gltf
 			}
 		};
 
+		std::optional<std::string> name;
 		std::vector<uint32_t> children;
 		std::optional<uint32_t> mesh = std::nullopt;
 		std::optional<uint32_t> skin = std::nullopt;

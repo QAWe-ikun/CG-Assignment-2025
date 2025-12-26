@@ -11,6 +11,7 @@ namespace gltf
 	) noexcept
 	{
 		Node result;
+		result.name = node.name.empty() ? std::nullopt : std::optional(node.name);
 
 		if (std::ranges::any_of(node.children, [&](int child_index) {
 				return child_index < 0 || std::cmp_greater_equal(child_index, model.nodes.size());

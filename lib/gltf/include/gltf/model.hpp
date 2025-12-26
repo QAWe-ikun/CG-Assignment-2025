@@ -49,6 +49,8 @@ namespace gltf
 		// Drawcall list
 		std::vector<Primitive_drawcall> drawcalls;
 
+		std::vector<glm::mat4> node_matrices;
+
 		// Joint matrices
 		std::shared_ptr<Deferred_skinning_resource> deferred_skin_resource;
 
@@ -132,6 +134,14 @@ namespace gltf
 		/// @return List of animations
 		///
 		std::span<const Animation> get_animations() const noexcept { return animations; }
+
+		///
+		/// @brief Find a unique node by name
+		///
+		/// @param name Name of the node
+		/// @return If found and unique, the node index; otherwise, nullopt
+		///
+		std::optional<uint32_t> find_node_by_name(const std::string& name) const noexcept;
 
 	  private:
 

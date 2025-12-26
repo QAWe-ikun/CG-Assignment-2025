@@ -61,6 +61,7 @@ void Logic::animation_control_ui() noexcept
 	ImGui::SliderFloat("门2", &door2_position, 0.0f, 1.0f);
 	ImGui::SliderFloat("门3", &door3_position, 0.0f, 1.0f);
 	ImGui::SliderFloat("门4", &door4_position, 0.0f, 1.0f);
+	ImGui::SliderFloat("门5", &door5_position, 0.0f, 1.0f);
 
 	ImGui::Separator();
 
@@ -68,12 +69,68 @@ void Logic::animation_control_ui() noexcept
 	ImGui::SliderFloat("右窗帘", &curtain_right_position, 0.0f, 1.0f);
 }
 
+static void draw_handle_hover(
+	const render::Camera_matrices& camera_matrices,
+	glm::mat4 handle_matrix,
+	size_t index
+)
+{
+	const auto handle_position = glm::vec3(handle_matrix[3]);
+
+	const auto handle_ndc_h =
+		camera_matrices.proj_matrix * camera_matrices.view_matrix * glm::vec4(handle_position, 1.0f);
+	const auto handle_ndc = handle_ndc_h / handle_ndc_h.w;
+
+	if (handle_ndc_h.w > 0.0f && glm::all(glm::lessThan(glm::abs(glm::vec2(handle_ndc)), glm::vec2(1.0))))
+	{
+		const auto [width, height] = ImGui::GetIO().DisplaySize;
+		const auto handle_uv = glm::fma(glm::vec2(handle_ndc), glm::vec2(0.5, -0.5), glm::vec2(0.5));
+		const auto handle_puv = handle_uv * glm::vec2(width, height);
+
+		ImGui::SetNextWindowPos(ImVec2(handle_puv.x, handle_puv.y), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+		if (ImGui::Begin(
+				std::format("##Handle_{}", index).c_str(),
+				nullptr,
+				ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar
+			))
+		{
+			ImGui::Text("把手");
+			ImGui::Text("(%.2f, %.2f, %.2f)", handle_position.x, handle_position.y, handle_position.z);
+		}
+		ImGui::End();
+	}
+}
+
+std::expected<Logic, util::Error> Logic::create(const gltf::Model& model) noexcept
+{
+	Logic logic;
+
+	const auto door1_node_index = model.find_node_by_name("Door1-Handle");
+	const auto door2_node_index = model.find_node_by_name("Door2-Handle");
+	const auto door3_node_index = model.find_node_by_name("Door3-Handle");
+	const auto door4_node_index = model.find_node_by_name("Door4-Handle");
+	const auto door5_node_index = model.find_node_by_name("Door5-Handle");
+
+	if (!door1_node_index || !door2_node_index || !door3_node_index || !door4_node_index || !door5_node_index)
+		return util::Error("Failed to find door handle nodes by name");
+
+	logic.door1_node_index = *door1_node_index;
+	logic.door2_node_index = *door2_node_index;
+	logic.door3_node_index = *door3_node_index;
+	logic.door4_node_index = *door4_node_index;
+	logic.door5_node_index = *door5_node_index;
+
+	return logic;
+}
+
 std::tuple<render::Params, std::vector<gltf::Drawdata>> Logic::logic(
 	const backend::SDL_context& context,
 	const gltf::Model& model
 ) noexcept
 {
-	camera_control.update(context);
+	camera_control.update_motion(context);
+	const auto camera_matrices = camera_control.update_and_get_matrices();
 
 	if (ImGui::Begin("设置", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
@@ -95,11 +152,23 @@ std::tuple<render::Params, std::vector<gltf::Drawdata>> Logic::logic(
 	animation_keys.emplace_back("Door2", door2_position * max_door_time);
 	animation_keys.emplace_back("Door3", door3_position * max_door_time);
 	animation_keys.emplace_back("Door4", door4_position * max_door_time);
+	animation_keys.emplace_back("Door5", door5_position * max_door5_time);
 	animation_keys.emplace_back("CurtainLeft", curtain_left_position * max_curtain_time);
 	animation_keys.emplace_back("CurtainRight", curtain_right_position * max_curtain_time);
 
+	auto main_drawdata = model.generate_drawdata(glm::mat4(1.0f), animation_keys);
+
+	for (const auto [idx, door_node_index] :
+		 std::to_array(
+			 {door1_node_index, door2_node_index, door3_node_index, door4_node_index, door5_node_index}
+		 ) | std::views::enumerate)
+	{
+		const auto handle_node_matrix = main_drawdata.node_matrices[door_node_index];
+		draw_handle_hover(camera_matrices, handle_node_matrix, idx);
+	}
+
 	std::vector<gltf::Drawdata> drawdata_list;
-	drawdata_list.emplace_back(model.generate_drawdata(glm::mat4(1.0f), animation_keys));
+	drawdata_list.emplace_back(std::move(main_drawdata));
 
 	const render::Primary_light_params primary_light{
 		.direction = light_direction,
@@ -122,7 +191,7 @@ std::tuple<render::Params, std::vector<gltf::Drawdata>> Logic::logic(
 
 	const render::Params params{
 		.aa_mode = aa_mode,
-		.camera = camera_control.get_matrices(),
+		.camera = camera_matrices,
 		.primary_light = primary_light,
 		.ambient = ambient_lighting.get_params(),
 		.bloom = bloom_params,

@@ -96,7 +96,7 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 
 	auto model = create_scene_from_model(sdl_context, model_path) | util::unwrap("Load 3D model failed");
 
-	Logic logic;
+	auto logic = Logic::create(model) | util::unwrap("Create logic failed");
 
 	/* 主循环 */
 
