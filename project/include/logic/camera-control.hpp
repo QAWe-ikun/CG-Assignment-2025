@@ -34,7 +34,7 @@ namespace logic
 		using Flying = graphics::camera::view::Flying;
 
 		Perspective camera_projection =
-			{.fov_y = glm::radians(45.0f), .near_plane = 0.5, .far_plane = std::nullopt};
+			{.fov_y = glm::radians(45.0f), .near_plane = 0.15, .far_plane = std::nullopt};
 
 		Flying target_camera = {
 			.position = glm::dvec3(0.0, 1.5, 0.0),

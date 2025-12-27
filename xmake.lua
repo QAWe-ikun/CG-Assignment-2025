@@ -19,6 +19,9 @@ end
 add_defines("GLM_FORCE_DEPTH_ZERO_TO_ONE", "GLM_ENABLE_EXPERIMENTAL", "GLM_FORCE_INTRINSICS")
 add_defines("TINYGLTF_NOEXCEPTION")
 
+-- Rules, tasks and custom packages
+includes("xmake/rule", "xmake/task/*.lua", "xmake/*.lua")
+
 -- Packages
 add_requires(
 	"libsdl3 main",
@@ -28,14 +31,15 @@ add_requires(
 	"tinygltf v2.9.6",
 	"meshoptimizer v0.25",
 	"paul_thread_pool 0.7.0",
-	"vulkan-headers 1.4.309+0"
+	"vulkan-headers 1.4.309+0",
+	"implot-new"
 )
 add_requires(
 	"imgui v1.92.1-docking", 
 	{configs={sdl3=true, sdl3_gpu=true, wchar32=true}}
 )
 add_requireconfs("imgui.libsdl3", {override=true, version="main"})
+add_requireconfs("implot-new.imgui", {override=true, version="v1.92.1-docking", configs={sdl3=true, sdl3_gpu=true, wchar32=true}})
+add_requireconfs("implot-new.imgui.libsdl3", {override=true, version="main"})
 
--- Rules, Tasks and subprojects
-includes("xmake/rule", "xmake/task/*.lua")
 includes("project", "lib", "render")

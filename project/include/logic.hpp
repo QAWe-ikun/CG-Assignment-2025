@@ -16,8 +16,8 @@ class Logic
 
 	/* Lighting Control */
 
-	float light_azimuth = glm::radians(103.0);
-	float light_pitch = glm::radians(53.0);
+	float light_azimuth = glm::radians(159.0);
+	float light_pitch = glm::radians(35.0);
 
 	glm::vec3 light_color = {1.0, 1.0, 1.0};
 	float light_intensity = 20.0;

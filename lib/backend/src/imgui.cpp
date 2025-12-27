@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlgpu3.h>
+#include <implot.h>
 
 #include "asset/imgui-asset.hpp"
 #include "zip/zip.hpp"
@@ -59,6 +60,7 @@ namespace backend
 	{
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
+		ImPlot::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
@@ -88,6 +90,7 @@ namespace backend
 	{
 		ImGui_ImplSDLGPU3_Shutdown();
 		ImGui_ImplSDL3_Shutdown();
+		ImPlot::DestroyContext();
 		ImGui::DestroyContext();
 	}
 
