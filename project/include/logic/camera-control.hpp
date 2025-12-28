@@ -18,14 +18,14 @@ namespace logic
 		/// @brief Update camera control based on user input.
 		///
 		///
-		void update(const backend::SDL_context& context) noexcept;
+		void update_motion(const backend::SDL_context& context) noexcept;
 
 		///
 		/// @brief Get camera matrices and eye position. Must be called exactly once per frame.
 		///
 		/// @return Camera matrices
 		///
-		render::Camera_matrices get_matrices() noexcept;
+		render::Camera_matrices update_and_get_matrices() noexcept;
 
 	  private:
 

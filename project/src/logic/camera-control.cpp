@@ -6,7 +6,7 @@
 
 namespace logic
 {
-	void Camera::update(const backend::SDL_context& context) noexcept
+	void Camera::update_motion(const backend::SDL_context& context) noexcept
 	{
 		auto& io = ImGui::GetIO();
 		const auto [width, height] = io.DisplaySize;
@@ -53,7 +53,7 @@ namespace logic
 		lerp_camera = Flying::lerp(lerp_camera, target_camera, glm::clamp(mix_factor * dt, 0.0f, 1.0f));
 	}
 
-	render::Camera_matrices Camera::get_matrices() noexcept
+	render::Camera_matrices Camera::update_and_get_matrices() noexcept
 	{
 		const auto [width, height] = ImGui::GetIO().DisplaySize;
 		const auto aspect_ratio = width / height;

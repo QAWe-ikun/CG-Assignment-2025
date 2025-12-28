@@ -11,6 +11,7 @@ namespace gltf
 	) noexcept
 	{
 		Node result;
+		result.name = node.name.empty() ? std::nullopt : std::optional(node.name);
 
 		if (std::ranges::any_of(node.children, [&](int child_index) {
 				return child_index < 0 || std::cmp_greater_equal(child_index, model.nodes.size());
@@ -30,6 +31,13 @@ namespace gltf
 			if (std::cmp_greater_equal(static_cast<uint32_t>(node.skin), model.skins.size()))
 				return util::Error(std::format("Node has invalid skin index {}", node.skin));
 			result.skin = node.skin;
+		}
+
+		if (node.light >= 0)
+		{
+			if (std::cmp_greater_equal(static_cast<uint32_t>(node.light), model.lights.size()))
+				return util::Error(std::format("Node has invalid light index {}", node.light));
+			result.light = node.light;
 		}
 
 		if (node.matrix.size() == 16)

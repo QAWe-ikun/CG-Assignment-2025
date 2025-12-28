@@ -72,10 +72,12 @@ namespace gltf
 			}
 		};
 
+		std::optional<std::string> name;
 		std::vector<uint32_t> children;
 		std::optional<uint32_t> mesh = std::nullopt;
 		std::optional<uint32_t> skin = std::nullopt;
 		std::variant<Transform, glm::mat4> transform = Transform{};
+		std::optional<uint32_t> light = std::nullopt;
 
 		// TODO: Weights, Name
 
