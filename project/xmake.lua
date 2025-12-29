@@ -10,3 +10,6 @@ target("main")
     add_files("asset/*.pack-desc")
 
     add_deps("render", "lib::wavefront")
+
+    add_rules("asset.pack")
+    add_files("asset/*.pack-desc")

@@ -47,6 +47,7 @@ namespace render
 
 	struct Sky_params
 	{
+		float brightness;
 		float turbidity = 2.0;
 		float brightness_mult = 0.1;
 	};

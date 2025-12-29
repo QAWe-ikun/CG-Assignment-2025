@@ -15,6 +15,12 @@
 #include "tiny_gltf.h"
 #include "util/unwrap.hpp"
 
+#include "asset/my-asset.hpp"
+#include "graphics/util/quick-create.hpp"
+#include "image/io.hpp"
+#include "util/asset.hpp"
+#include "zip/zip.hpp"
+
 static std::expected<gltf::Model, util::Error> create_scene_from_model(
 	const backend::SDL_context& context,
 	const std::string& path
@@ -92,6 +98,23 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 		| util::unwrap("Create render resource failed");
 
 	auto model = create_scene_from_model(sdl_context, model_path) | util::unwrap("Load 3D model failed");
+    
+	// auto image_data =
+	// 	util::get_asset(resource_asset::my_asset, "test.png")
+	// 		.and_then(zip::Decompress())
+	// 		.and_then(image::load_from_memory<image::Precision::U8, image::Format::RGBA>)
+	// 	| util::unwrap("Load image asset failed");
+
+	// auto gpu_image =
+	// 	graphics::create_texture_from_image(
+	// 		sdl_context.device,
+	// 		{.type = SDL_GPU_TEXTURETYPE_2D,
+	// 		 .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+	// 		 .usage = {.sampler = true}},
+	// 		image_data,
+	// 		"Test Image"
+	// 	)
+	// 	| util::unwrap("Create GPU texture from image failed");
 
 	auto logic = Logic::create(sdl_context.device, model) | util::unwrap("Create logic failed");
 
@@ -119,6 +142,15 @@ static void main_logic(const backend::SDL_context& sdl_context, const std::strin
 
 		backend::imgui_new_frame();
 		const auto [params, model_drawdata, primary_point_lights] = logic.logic(sdl_context, model);
+
+		// if (ImGui::Begin("Test Image"))
+		// { 	
+		// 	if(gpu_image!=nullptr)
+		// 	ImGui::Image((ImTextureID)(intptr_t)(SDL_GPUTexture*)gpu_image, {400, 400});
+		// 	else
+		// 	ImGui::Text("Image not loaded");
+		// }
+		// ImGui::End();
 
 		/*===== Render =====*/
 
