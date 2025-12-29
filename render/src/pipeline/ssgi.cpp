@@ -209,8 +209,8 @@ namespace render::pipeline
 
 		const gpu::Compute_pipeline::Create_info initial_pipeline_create_info{
 			.shader_data = shader_asset::init_temporal_comp,
-			.num_samplers = 9,
-			.num_readwrite_storage_textures = 4,
+			.num_samplers = 11,
+			.num_readwrite_storage_textures = 5,
 			.num_uniform_buffers = 1,
 			.threadcount_x = 8,
 			.threadcount_y = 8,
@@ -277,7 +277,7 @@ namespace render::pipeline
 			device,
 			gpu::Compute_pipeline::Create_info{
 				.shader_data = shader_asset::radiance_upsample_comp,
-				.num_samplers = 4,
+				.num_samplers = 5,
 				.num_readwrite_storage_textures = 1,
 				.num_uniform_buffers = 1,
 				.threadcount_x = 16,
@@ -430,8 +430,23 @@ namespace render::pipeline
 			.padding3 = 0
 		};
 
-		const std::array write_bindings =
-			{write_binding_texture1, write_binding_texture2, write_binding_texture3, write_binding_texture4};
+		const SDL_GPUStorageTextureReadWriteBinding write_binding_texture5{
+			.texture = ssgi_target.specular_texture.current(),
+			.mip_level = 0,
+			.layer = 0,
+			.cycle = true,
+			.padding1 = 0,
+			.padding2 = 0,
+			.padding3 = 0
+		};
+
+		const std::array write_bindings = {
+			write_binding_texture1,
+			write_binding_texture2,
+			write_binding_texture3,
+			write_binding_texture4,
+			write_binding_texture5
+		};
 
 		command_buffer.push_debug_group("Initial Sample & Temporal Pass");
 		auto result = command_buffer.run_compute_pass(
@@ -452,7 +467,9 @@ namespace render::pipeline
 					ssgi_target.temporal_reservoir_texture1.prev().bind_with_sampler(nearest_sampler),
 					ssgi_target.temporal_reservoir_texture2.prev().bind_with_sampler(nearest_sampler),
 					ssgi_target.temporal_reservoir_texture3.prev().bind_with_sampler(nearest_sampler),
-					ssgi_target.temporal_reservoir_texture4.prev().bind_with_sampler(nearest_sampler)
+					ssgi_target.temporal_reservoir_texture4.prev().bind_with_sampler(nearest_sampler),
+					ssgi_target.specular_texture.prev().bind_with_sampler(nearest_sampler),
+					gbuffer.albedo_texture->bind_with_sampler(nearest_sampler)
 				);
 				compute_pass.dispatch(dispatch_size.x, dispatch_size.y, 1);
 			}
@@ -679,7 +696,8 @@ namespace render::pipeline
 					ssgi_target.blurred_diffuse_texture->bind_with_sampler(nearest_sampler),
 					gbuffer.depth_value_texture.current().bind_with_sampler(nearest_sampler),
 					gbuffer.albedo_texture->bind_with_sampler(nearest_sampler),
-					gbuffer.lighting_info_texture->bind_with_sampler(nearest_sampler)
+					gbuffer.lighting_info_texture->bind_with_sampler(nearest_sampler),
+					ssgi_target.specular_texture.current().bind_with_sampler(nearest_sampler)
 				);
 				compute_pass.dispatch(dispatch_size.x, dispatch_size.y, 1);
 			}
