@@ -27,6 +27,22 @@ namespace logic
 		///
 		render::Camera_matrices update_and_get_matrices() noexcept;
 
+		///
+		/// @brief Set camera to a specific position and orientation
+		///
+		/// @param position Camera position
+		/// @param azimuth Azimuth angle in radians
+		/// @param pitch Pitch angle in radians
+		///
+		void set_camera(glm::dvec3 position, double azimuth, double pitch) noexcept;
+
+		///
+		/// @brief Get current camera position and angles
+		///
+		/// @return Tuple of position, azimuth, and pitch
+		///
+		std::tuple<glm::dvec3, double, double> get_camera_state() const noexcept;
+
 	  private:
 
 		using Perspective = graphics::camera::projection::Perspective;

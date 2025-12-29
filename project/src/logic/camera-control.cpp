@@ -71,4 +71,17 @@ namespace logic
 			.eye_position = lerp_camera.eye_position(),
 		};
 	}
+
+	void Camera::set_camera(glm::dvec3 position, double azimuth, double pitch) noexcept
+	{
+		target_camera.position = position;
+		target_camera.angles.azimuth = azimuth;
+		target_camera.angles.pitch = pitch;
+		lerp_camera = target_camera;
+	}
+
+	std::tuple<glm::dvec3, double, double> Camera::get_camera_state() const noexcept
+	{
+		return {target_camera.position, target_camera.angles.azimuth, target_camera.angles.pitch};
+	}
 }

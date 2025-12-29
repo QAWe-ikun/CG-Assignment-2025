@@ -16,7 +16,7 @@ layout(std140, set = 3, binding = 0) uniform Params
     vec2 screen_size;
     vec3 eye_position;
     vec3 sun_dir;
-    vec3 sun_intensity;
+    float intensity;
     vec3 p_A, p_B, p_C, p_D, p_E, p_Z;
 };
 
@@ -48,5 +48,5 @@ void main()
     vec4 view_dir_h = camera_mat_inv * vec4(ndc.xy, 0.5, 1.0);
     vec3 view_dir = normalize(view_dir_h.xyz / view_dir_h.w - eye_position);
 
-    out_color = vec4(preetham_sky_rgb(view_dir, sun_dir) * sun_intensity, 1.0);
+    out_color = vec4(preetham_sky_rgb(view_dir, sun_dir) * intensity, 1.0);
 }

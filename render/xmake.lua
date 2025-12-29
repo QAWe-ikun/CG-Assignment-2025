@@ -31,3 +31,5 @@ target("render")
         "lib::wavefront",
         {public=true}
     )
+
+    set_runargs("Untitled.glb")

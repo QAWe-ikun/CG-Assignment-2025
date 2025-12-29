@@ -2,12 +2,11 @@
 #include "helper.hpp"
 
 #include <map>
+#include <print>
 
 namespace wavefront::detail
 {
-	std::expected<Parsed_line, util::Error> parse_pos(
-		const std::vector<std::string_view>& parameters
-	) noexcept
+	std::expected<Parsed_line, util::Error> parse_pos(const std::vector<std::string>& parameters) noexcept
 	{
 		if (parameters.size() != 4) return util::Error("Invalid arguments");
 
@@ -22,7 +21,7 @@ namespace wavefront::detail
 		};
 	}
 
-	std::expected<Parsed_line, util::Error> parse_uv(const std::vector<std::string_view>& parameters) noexcept
+	std::expected<Parsed_line, util::Error> parse_uv(const std::vector<std::string>& parameters) noexcept
 	{
 		if (parameters.size() != 3) return util::Error("Invalid arguments");
 
@@ -36,9 +35,7 @@ namespace wavefront::detail
 		};
 	}
 
-	std::expected<Parsed_line, util::Error> parse_normal(
-		const std::vector<std::string_view>& parameters
-	) noexcept
+	std::expected<Parsed_line, util::Error> parse_normal(const std::vector<std::string>& parameters) noexcept
 	{
 		if (parameters.size() != 4) return util::Error("Invalid arguments");
 
@@ -53,9 +50,7 @@ namespace wavefront::detail
 		};
 	}
 
-	std::expected<Parsed_line, util::Error> parse_face(
-		const std::vector<std::string_view>& parameters
-	) noexcept
+	std::expected<Parsed_line, util::Error> parse_face(const std::vector<std::string>& parameters) noexcept
 	{
 		if (parameters.size() != 4) util::Error("Invalid arguments");
 
@@ -77,18 +72,19 @@ namespace wavefront::detail
 
 		const auto parameters =
 			slice
+			| std::views::filter([](char c) { return c != '\r'; })
 			| std::views::split(' ')
 			| std::views::filter([](auto subrange) { return !subrange.empty(); })
 			| std::views::transform([](auto subrange) {
-				  return std::string_view(subrange.begin(), subrange.end());
+				  return std::string(subrange.begin(), subrange.end());
 			  })
-			| std::ranges::to<std::vector<std::string_view>>();
+			| std::ranges::to<std::vector>();
 
 		if (parameters.empty()) return std::monostate();
 
 		/* Parse */
 
-		using Parse_func = std::expected<Parsed_line, util::Error>(const std::vector<std::string_view>&);
+		using Parse_func = std::expected<Parsed_line, util::Error>(const std::vector<std::string>&);
 
 		const std::map<std::string, Parse_func*> parsers = {
 			{"v",  parse_pos   },
@@ -96,6 +92,8 @@ namespace wavefront::detail
 			{"vn", parse_normal},
 			{"f",  parse_face  }
 		};
+
+		// std::println("Parsing line: {}", parameters);
 
 		if (const auto it = parsers.find(std::string(parameters[0])); it != parsers.end())
 			return it->second(parameters);
