@@ -176,6 +176,8 @@ function build_file(target, source_path, opt)
 	local paths = _get_path(target)
 	local tools = _get_tools()
 	local files = _get_filepaths(target, paths, source_path)
+	local arch = target:arch()
+	local plat = target:plat()
 
 	local debug = target:extraconf("rules", "asset.shader", "debug") or false
 
@@ -184,7 +186,9 @@ function build_file(target, source_path, opt)
 		_compile_spv(tools, files, debug)
 		binutils.bin2obj(files.spv, files.object, {
 			symbol_prefix = format("_asset_shader_%s_", string.gsub(target:name(), "[%.%-]", "_")),
-			basename = files.varname
+			basename = files.varname,
+			arch = arch,
+			plat = plat
 		})
 	end, {
 		files = files.header,

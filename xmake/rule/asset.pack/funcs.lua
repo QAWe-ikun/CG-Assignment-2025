@@ -183,6 +183,9 @@ function build_file(target, source_path, opt)
 	local python = assert(find_tool("python3") or find_tool("python"), "python not found!")
 
 	local bin2obj_files = {}
+
+	local target_arch = target:arch()
+	local target_plat = target:plat()
 	local target_name = target:name()
 
 	for _, file in ipairs(file_list) do
@@ -202,7 +205,12 @@ function build_file(target, source_path, opt)
 			local archive_file = path.join(paths.archive, path.filename(file) .. ".gz")
 
 			os.vrunv(python.program, {paths.script, file, archive_file})
-			binutils.bin2obj(archive_file, object_file, {symbol_prefix = "", basename = symbol_name})
+			binutils.bin2obj(archive_file, object_file, {
+				symbol_prefix = "",
+				basename = symbol_name,
+				arch = target_arch,
+				plat = target_plat
+			})
 		end
 
 		compiler.compile(files.cpp, files.object, {target = target})
