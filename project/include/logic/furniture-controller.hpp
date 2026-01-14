@@ -8,11 +8,11 @@
 
 namespace logic
 {
-	class Furniture_controller
+	class FurnitureController
 	{
 	  public:
 
-		static std::expected<Furniture_controller, util::Error> create(const gltf::Model& model) noexcept;
+		static std::expected<FurnitureController, util::Error> create(const gltf::Model& model) noexcept;
 
 		void control_ui() noexcept;
 
@@ -24,7 +24,7 @@ namespace logic
 		///
 		void hud_ui(
 			std::span<const glm::mat4> node_vertices,
-			const render::Camera_matrices& camera_matrices
+			const render::CameraMatrices& camera_matrices
 		) noexcept;
 
 		///
@@ -32,7 +32,7 @@ namespace logic
 		///
 		/// @return Animation keys for furniture items.
 		///
-		std::vector<gltf::Animation_key> update() noexcept;
+		std::vector<gltf::AnimationKey> update() noexcept;
 
 		///
 		/// @brief Handle fire event by closing all furniture items in the specified area.
@@ -69,15 +69,15 @@ namespace logic
 
 		static constexpr float max_hud_distance = 3.0f;
 
-		Furniture_controller(std::vector<State> furniture_states) :
+		FurnitureController(std::vector<State> furniture_states) :
 			furniture_states(std::move(furniture_states))
 		{}
 
 	  public:
 
-		Furniture_controller(const Furniture_controller&) = delete;
-		Furniture_controller(Furniture_controller&&) = default;
-		Furniture_controller& operator=(const Furniture_controller&) = delete;
-		Furniture_controller& operator=(Furniture_controller&&) = default;
+		FurnitureController(const FurnitureController&) = delete;
+		FurnitureController(FurnitureController&&) = default;
+		FurnitureController& operator=(const FurnitureController&) = delete;
+		FurnitureController& operator=(FurnitureController&&) = default;
 	};
 }

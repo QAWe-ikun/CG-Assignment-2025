@@ -43,11 +43,11 @@ namespace render::pipeline
 
 		std::expected<void, util::Error> run(
 			SDL_GPUDevice* device,
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			SDL_GPUTexture* source,
 			SDL_GPUTexture* target,
 			glm::u32vec2 size,
-			Antialias_mode mode
+			AntialiasMode mode
 		) noexcept;
 	};
 }

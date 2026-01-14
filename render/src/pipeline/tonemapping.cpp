@@ -20,17 +20,17 @@ namespace render::pipeline
 		SDL_GPUTextureFormat target_format
 	) noexcept
 	{
-		const gpu::Sampler::Create_info nearest_sampler_create_info{
+		const gpu::Sampler::CreateInfo nearest_sampler_create_info{
 			.min_filter = gpu::Sampler::Filter::Nearest,
 			.mag_filter = gpu::Sampler::Filter::Nearest,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
 			.max_lod = 0.0f
 		};
 
-		const gpu::Sampler::Create_info linear_sampler_create_info{
+		const gpu::Sampler::CreateInfo linear_sampler_create_info{
 			.min_filter = gpu::Sampler::Filter::Linear,
 			.mag_filter = gpu::Sampler::Filter::Linear,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
 			.max_lod = 0.0f
 		};
 
@@ -41,10 +41,10 @@ namespace render::pipeline
 		if (!linear_sampler)
 			return linear_sampler.error().forward("Create tonemapping linear sampler failed");
 
-		auto fragment_shader = gpu::Graphics_shader::create(
+		auto fragment_shader = gpu::GraphicsShader::create(
 			device,
 			shader_asset::tonemapping_frag,
-			gpu::Graphics_shader::Stage::Fragment,
+			gpu::GraphicsShader::Stage::Fragment,
 			3,
 			0,
 			1,
@@ -53,15 +53,15 @@ namespace render::pipeline
 		if (!fragment_shader)
 			return fragment_shader.error().forward("Create tonemapping fragment shader failed");
 
-		auto fullscreen_pass = graphics::Fullscreen_pass<true>::create(
+		auto FullscreenPass = graphics::FullscreenPass<true>::create(
 			device,
 			*fragment_shader,
 			{.type = SDL_GPU_TEXTURETYPE_2D, .format = target_format, .usage = {.color_target = true}},
 			{},
 			"Tonemapping Pipeline"
 		);
-		if (!fullscreen_pass)
-			return fullscreen_pass.error().forward("Create tonemapping fullscreen pass failed");
+		if (!FullscreenPass)
+			return FullscreenPass.error().forward("Create tonemapping fullscreen pass failed");
 
 		auto bloom_mask_dummy =
 			gltf::create_placeholder_image(device, glm::vec4(0.0f), "Tonemapping Bloom Mask Dummy");
@@ -85,7 +85,7 @@ namespace render::pipeline
 		if (!bloom_mask) return bloom_mask.error().forward("Create tonemapping bloom mask failed");
 
 		return Tonemapping(
-			std::move(*fullscreen_pass),
+			std::move(*FullscreenPass),
 			std::move(*nearest_sampler),
 			std::move(*linear_sampler),
 			std::move(*bloom_mask_dummy),
@@ -94,9 +94,9 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> Tonemapping::render(
-		const gpu::Command_buffer& command_buffer,
-		const target::Light_buffer& light_buffer,
-		const target::Auto_exposure& auto_exposure,
+		const gpu::CommandBuffer& command_buffer,
+		const target::LightBuffer& light_buffer,
+		const target::AutoExposure& auto_exposure,
 		const target::Bloom& bloom,
 		SDL_GPUTexture* target_texture,
 		const Param& param
@@ -117,7 +117,7 @@ namespace render::pipeline
 
 		command_buffer.push_debug_group("Tonemapping Pass");
 		auto result =
-			fullscreen_pass
+			FullscreenPass
 				.render(command_buffer, target_texture, sampler_texture_arr, std::nullopt, storage_buffer_arr)
 				.transform_error(util::Error::forward_fn("Render tonemapping pass failed"));
 		command_buffer.pop_debug_group();

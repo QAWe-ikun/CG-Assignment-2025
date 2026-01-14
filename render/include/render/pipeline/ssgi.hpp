@@ -32,8 +32,8 @@ namespace render::pipeline
 		static std::expected<SSGI, util::Error> create(SDL_GPUDevice* device) noexcept;
 
 		std::expected<void, util::Error> render(
-			const gpu::Command_buffer& command_buffer,
-			const target::Light_buffer& light_buffer,
+			const gpu::CommandBuffer& command_buffer,
+			const target::LightBuffer& light_buffer,
 			const target::Gbuffer& gbuffer,
 			const target::SSGI& ssgi_target,
 			const Param& param,
@@ -42,7 +42,7 @@ namespace render::pipeline
 
 	  private:
 
-		struct Initial_temporal_param
+		struct InitialTemporalParam
 		{
 			glm::mat4 inv_proj_mat;
 			glm::mat4 proj_mat;
@@ -61,13 +61,10 @@ namespace render::pipeline
 			float max_scene_distance;    // farthest viewable distance in the scene
 			float distance_attenuation;  // attenuation factor for distance
 
-			static Initial_temporal_param from_param(
-				const Param& param,
-				const glm::uvec2& resolution
-			) noexcept;
+			static InitialTemporalParam from_param(const Param& param, const glm::uvec2& resolution) noexcept;
 		};
 
-		struct Spatial_reuse_param
+		struct SpatialReuseParam
 		{
 			glm::mat4 inv_view_proj_mat;
 			glm::mat4 prev_view_proj_mat;
@@ -83,10 +80,10 @@ namespace render::pipeline
 			float near_plane;
 			glm::ivec2 time_noise;
 
-			static Spatial_reuse_param from_param(const Param& param, const glm::uvec2& resolution) noexcept;
+			static SpatialReuseParam from_param(const Param& param, const glm::uvec2& resolution) noexcept;
 		};
 
-		struct Radiance_composite_param
+		struct RadianceCompositeParam
 		{
 			glm::mat4 back_projection_mat;
 			glm::mat4 inv_back_projection_mat;
@@ -96,40 +93,40 @@ namespace render::pipeline
 			glm::uvec2 full_resolution;
 			float blend_factor;
 
-			static Radiance_composite_param from_param(const Param& param, glm::u32vec2 resolution) noexcept;
+			static RadianceCompositeParam from_param(const Param& param, glm::u32vec2 resolution) noexcept;
 		};
 
-		struct Radiance_blur_param
+		struct RadianceBlurParam
 		{
 			glm::vec4 inv_view_proj_mat_col3;
 			glm::vec4 inv_view_proj_mat_col4;
 			glm::uvec2 comp_resolution;
 
-			static Radiance_blur_param from_param(const Param& param, glm::u32vec2 resolution) noexcept;
+			static RadianceBlurParam from_param(const Param& param, glm::u32vec2 resolution) noexcept;
 		};
 
-		struct Radiance_upsample_param
+		struct RadianceUpsampleParam
 		{
 			glm::vec4 inv_view_proj_mat_col3;
 			glm::vec4 inv_view_proj_mat_col4;
 			glm::uvec2 comp_resolution;
 			glm::uvec2 full_resolution;
 
-			static Radiance_upsample_param from_param(const Param& param, glm::u32vec2 resolution) noexcept;
+			static RadianceUpsampleParam from_param(const Param& param, glm::u32vec2 resolution) noexcept;
 		};
 
-		gpu::Compute_pipeline initial_pipeline;
-		gpu::Compute_pipeline spatial_reuse_pipeline;
-		gpu::Compute_pipeline radiance_composite_pipeline;
-		gpu::Compute_pipeline radiance_blur_pipeline;
-		gpu::Compute_pipeline radiance_upsample_pipeline;
-		graphics::Fullscreen_pass<true> radiance_add_pass;
+		gpu::ComputePipeline initial_pipeline;
+		gpu::ComputePipeline spatial_reuse_pipeline;
+		gpu::ComputePipeline radiance_composite_pipeline;
+		gpu::ComputePipeline radiance_blur_pipeline;
+		gpu::ComputePipeline radiance_upsample_pipeline;
+		graphics::FullscreenPass<true> radiance_add_pass;
 		gpu::Sampler noise_sampler, nearest_sampler, linear_sampler;
 		gpu::Texture noise_texture;
 
 		std::expected<void, util::Error> run_initial_sample(
-			const gpu::Command_buffer& command_buffer,
-			const target::Light_buffer& light_buffer,
+			const gpu::CommandBuffer& command_buffer,
+			const target::LightBuffer& light_buffer,
 			const target::Gbuffer& gbuffer,
 			const target::SSGI& ssgi_target,
 			const Param& param,
@@ -137,7 +134,7 @@ namespace render::pipeline
 		) const noexcept;
 
 		std::expected<void, util::Error> run_spatial_reuse(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Gbuffer& gbuffer,
 			const target::SSGI& ssgi_target,
 			const Param& param,
@@ -145,7 +142,7 @@ namespace render::pipeline
 		) const noexcept;
 
 		std::expected<void, util::Error> run_radiance_composite(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Gbuffer& gbuffer,
 			const target::SSGI& ssgi_target,
 			const Param& param,
@@ -153,7 +150,7 @@ namespace render::pipeline
 		) const noexcept;
 
 		std::expected<void, util::Error> run_radiance_blur(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Gbuffer& gbuffer,
 			const target::SSGI& ssgi_target,
 			const Param& param,
@@ -161,7 +158,7 @@ namespace render::pipeline
 		) const noexcept;
 
 		std::expected<void, util::Error> run_radiance_upsample(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Gbuffer& gbuffer,
 			const target::SSGI& ssgi_target,
 			const Param& param,
@@ -169,19 +166,19 @@ namespace render::pipeline
 		) const noexcept;
 
 		std::expected<void, util::Error> render_radiance_add(
-			const gpu::Command_buffer& command_buffer,
-			const target::Light_buffer& light_buffer,
+			const gpu::CommandBuffer& command_buffer,
+			const target::LightBuffer& light_buffer,
 			const target::SSGI& ssgi_target,
 			glm::u32vec2 resolution
 		) const noexcept;
 
 		SSGI(
-			gpu::Compute_pipeline ssgi_pipeline,
-			gpu::Compute_pipeline spatial_reuse_pipeline,
-			gpu::Compute_pipeline radiance_composite_pipeline,
-			gpu::Compute_pipeline radiance_blur_pipeline,
-			gpu::Compute_pipeline radiance_upsample_pipeline,
-			graphics::Fullscreen_pass<true> radiance_add_pass,
+			gpu::ComputePipeline ssgi_pipeline,
+			gpu::ComputePipeline spatial_reuse_pipeline,
+			gpu::ComputePipeline radiance_composite_pipeline,
+			gpu::ComputePipeline radiance_blur_pipeline,
+			gpu::ComputePipeline radiance_upsample_pipeline,
+			graphics::FullscreenPass<true> radiance_add_pass,
 			gpu::Sampler noise_sampler,
 			gpu::Sampler nearest_sampler,
 			gpu::Sampler linear_sampler,

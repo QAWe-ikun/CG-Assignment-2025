@@ -10,23 +10,23 @@ namespace render::drawdata
 	{
 		struct Drawcall
 		{
-			gltf::Primitive_drawcall drawcall;
+			gltf::PrimitiveDrawcall drawcall;
 			size_t resource_set_index;
 			float min_z;
 		};
 
 		struct Resource
 		{
-			gltf::Material_cache::Ref material_cache;
-			std::shared_ptr<gltf::Deferred_skinning_resource> deferred_skinning_resource;
+			gltf::MaterialCache::Ref material_cache;
+			std::shared_ptr<gltf::DeferredSkinningResource> deferred_skinning_resource;
 		};
 
-		struct CSM_level_data
+		struct ShadowLevelData
 		{
-			std::map<std::pair<gltf::Pipeline_mode, bool>, std::vector<Drawcall>> drawcalls;
+			std::map<std::pair<gltf::PipelineMode, bool>, std::vector<Drawcall>> drawcalls;
 			std::vector<Resource> resource_sets;
 
-			graphics::Smallest_bound smallest_bound;
+			graphics::SmallestBound smallest_bound;
 			std::array<glm::vec4, 4> frustum_planes;
 
 			float near = std::numeric_limits<float>::max();
@@ -39,7 +39,7 @@ namespace render::drawdata
 			void sort() noexcept;
 		};
 
-		std::array<CSM_level_data, 3> csm_levels;
+		std::array<ShadowLevelData, 3> csm_levels;
 
 		///
 		/// @brief Create a drawdata for shadow rendering

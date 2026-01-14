@@ -7,7 +7,7 @@
 
 namespace logic
 {
-	void Furniture_controller::State::update(float delta_time) noexcept
+	void FurnitureController::State::update(float delta_time) noexcept
 	{
 		const float target_time = opened ? config.max_animation_time : 0.0f;
 
@@ -15,7 +15,7 @@ namespace logic
 		current_time = glm::clamp(current_time, 0.0f, config.max_animation_time);
 	}
 
-	const std::vector<Furniture_controller::Config> Furniture_controller::furniture_configs = {
+	const std::vector<FurnitureController::Config> FurnitureController::furniture_configs = {
 		Config{
 			   .max_animation_time = 54.0f / 24.0f,
 			   .hud = true,
@@ -74,7 +74,7 @@ namespace logic
 		},
 	};
 
-	std::expected<Furniture_controller, util::Error> Furniture_controller::create(
+	std::expected<FurnitureController, util::Error> FurnitureController::create(
 		const gltf::Model& model
 	) noexcept
 	{
@@ -94,10 +94,10 @@ namespace logic
 			);
 		}
 
-		return Furniture_controller(std::move(furniture_states));
+		return FurnitureController(std::move(furniture_states));
 	}
 
-	void Furniture_controller::control_ui() noexcept
+	void FurnitureController::control_ui() noexcept
 	{
 		const auto func = [this] {
 			const auto on_color = IM_COL32(100, 255, 100, 200);
@@ -129,9 +129,9 @@ namespace logic
 		ui::capsule::window("##FurnitureControl", ui::capsule::Position::Bottom_left, func, {0, -1}, false);
 	}
 
-	void Furniture_controller::hud_ui(
+	void FurnitureController::hud_ui(
 		std::span<const glm::mat4> node_vertices,
-		const render::Camera_matrices& camera_matrices
+		const render::CameraMatrices& camera_matrices
 	) noexcept
 	{
 		const auto on_color = IM_COL32(100, 255, 100, 200);
@@ -193,14 +193,14 @@ namespace logic
 		}
 	}
 
-	std::vector<gltf::Animation_key> Furniture_controller::update() noexcept
+	std::vector<gltf::AnimationKey> FurnitureController::update() noexcept
 	{
 		const float delta_time = ImGui::GetIO().DeltaTime;
 		for (auto& furniture : furniture_states) furniture.update(delta_time);
 
 		return furniture_states
 			| std::views::transform([](const auto& state) {
-				   return gltf::Animation_key{
+				   return gltf::AnimationKey{
 					   .animation = state.config.animation_name,
 					   .time = state.current_time
 				   };
@@ -208,7 +208,7 @@ namespace logic
 			| std::ranges::to<std::vector>();
 	}
 
-	void Furniture_controller::handle_fire_event(Area fire_area) noexcept
+	void FurnitureController::handle_fire_event(Area fire_area) noexcept
 	{
 		for (auto& furniture : furniture_states)
 		{

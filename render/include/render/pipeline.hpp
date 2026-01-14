@@ -21,21 +21,21 @@ namespace render
 	struct Pipeline
 	{
 		pipeline::Antialias aa_module;
-		pipeline::Ambient_light ambient_light;
+		pipeline::AmbientLight ambient_light;
 		pipeline::AO ao;
-		pipeline::Auto_exposure auto_exposure;
+		pipeline::AutoExposure auto_exposure;
 		pipeline::Bloom bloom;
 		pipeline::Directional_light directional_light;
-		pipeline::Gbuffer_gltf gbuffer_gltf;
-		pipeline::Hiz_generator hiz_generator;
-		pipeline::Shadow_gltf shadow_gltf;
-		pipeline::Sky_preetham sky_preetham;
+		pipeline::GbufferGLTF gbuffer_gltf;
+		pipeline::HizGenerator hiz_generator;
+		pipeline::ShadowGLTF shadow_gltf;
+		pipeline::SkyPreetham sky_preetham;
 		pipeline::SSGI ssgi;
 		pipeline::Tonemapping tonemapping;
 		pipeline::Light point_light;
 
-		graphics::Renderpass_copy depth_to_color_copier;
+		graphics::RenderpassCopy depth_to_color_copier;
 
-		static std::expected<Pipeline, util::Error> create(const backend::SDL_context& context) noexcept;
+		static std::expected<Pipeline, util::Error> create(const backend::SDLcontext& context) noexcept;
 	};
 }

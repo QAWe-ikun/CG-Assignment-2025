@@ -11,116 +11,116 @@
 
 namespace render::pipeline
 {
-	class Shadow_gltf
+	class ShadowGLTF
 	{
 		// (Pipeline Mode, Rigged) -> Pipeline Instance
-		std::map<std::pair<gltf::Pipeline_mode, bool>, std::unique_ptr<Gltf_pipeline>> pipelines;
+		std::map<std::pair<gltf::PipelineMode, bool>, std::unique_ptr<PipelineGLTF>> pipelines;
 
-		Shadow_gltf(
-			std::map<std::pair<gltf::Pipeline_mode, bool>, std::unique_ptr<Gltf_pipeline>> pipelines
+		ShadowGLTF(
+			std::map<std::pair<gltf::PipelineMode, bool>, std::unique_ptr<PipelineGLTF>> pipelines
 		) noexcept :
 			pipelines(std::move(pipelines))
 		{}
 
-		struct Frag_param
+		struct FragParam
 		{
 			float base_color_factor_a;
 			float alpha_cutoff;
 		};
 
-		class Pipeline_normal : public Gltf_pipeline
+		class PipelineNormal : public PipelineGLTF
 		{
-			gltf::Pipeline_mode mode;
-			gpu::Graphics_pipeline pipeline;
+			gltf::PipelineMode mode;
+			gpu::GraphicsPipeline pipeline;
 
 		  public:
 
-			Pipeline_normal(gltf::Pipeline_mode mode, gpu::Graphics_pipeline pipeline) :
+			PipelineNormal(gltf::PipelineMode mode, gpu::GraphicsPipeline pipeline) :
 				mode(mode),
 				pipeline(std::move(pipeline))
 			{}
 
-			Pipeline_normal(const Pipeline_normal&) = delete;
-			Pipeline_normal(Pipeline_normal&&) = default;
-			Pipeline_normal& operator=(const Pipeline_normal&) = delete;
-			Pipeline_normal& operator=(Pipeline_normal&&) = default;
+			PipelineNormal(const PipelineNormal&) = delete;
+			PipelineNormal(PipelineNormal&&) = default;
+			PipelineNormal& operator=(const PipelineNormal&) = delete;
+			PipelineNormal& operator=(PipelineNormal&&) = default;
 
 			void bind(
-				const gpu::Command_buffer& command_buffer,
-				const gpu::Render_pass& render_pass,
+				const gpu::CommandBuffer& command_buffer,
+				const gpu::RenderPass& render_pass,
 				const glm::mat4& camera_matrix
 			) const noexcept override;
 
 			void set_material(
-				const gpu::Command_buffer& command_buffer,
-				const gpu::Render_pass& render_pass,
-				const gltf::Material_gpu& material
+				const gpu::CommandBuffer& command_buffer,
+				const gpu::RenderPass& render_pass,
+				const gltf::MaterialGPU& material
 			) const noexcept override;
 
 			void set_skin(
-				const gpu::Render_pass& render_pass,
-				const gltf::Deferred_skinning_resource& skinning_resource
+				const gpu::RenderPass& render_pass,
+				const gltf::DeferredSkinningResource& skinning_resource
 			) const noexcept override;
 
 			void draw(
-				const gpu::Command_buffer& command_buffer,
-				const gpu::Render_pass& render_pass,
-				const gltf::Primitive_drawcall& drawcall
+				const gpu::CommandBuffer& command_buffer,
+				const gpu::RenderPass& render_pass,
+				const gltf::PrimitiveDrawcall& drawcall
 			) const noexcept override;
 		};
 
-		class Pipeline_rigged : public Gltf_pipeline
+		class PipelineRigged : public PipelineGLTF
 		{
-			gltf::Pipeline_mode mode;
-			gpu::Graphics_pipeline pipeline;
+			gltf::PipelineMode mode;
+			gpu::GraphicsPipeline pipeline;
 
 		  public:
 
-			Pipeline_rigged(gltf::Pipeline_mode mode, gpu::Graphics_pipeline pipeline) :
+			PipelineRigged(gltf::PipelineMode mode, gpu::GraphicsPipeline pipeline) :
 				mode(mode),
 				pipeline(std::move(pipeline))
 			{}
 
-			Pipeline_rigged(const Pipeline_rigged&) = delete;
-			Pipeline_rigged(Pipeline_rigged&&) = default;
-			Pipeline_rigged& operator=(const Pipeline_rigged&) = delete;
-			Pipeline_rigged& operator=(Pipeline_rigged&&) = default;
+			PipelineRigged(const PipelineRigged&) = delete;
+			PipelineRigged(PipelineRigged&&) = default;
+			PipelineRigged& operator=(const PipelineRigged&) = delete;
+			PipelineRigged& operator=(PipelineRigged&&) = default;
 
 			void bind(
-				const gpu::Command_buffer& command_buffer,
-				const gpu::Render_pass& render_pass,
+				const gpu::CommandBuffer& command_buffer,
+				const gpu::RenderPass& render_pass,
 				const glm::mat4& camera_matrix
 			) const noexcept override;
 
 			void set_material(
-				const gpu::Command_buffer& command_buffer,
-				const gpu::Render_pass& render_pass,
-				const gltf::Material_gpu& material
+				const gpu::CommandBuffer& command_buffer,
+				const gpu::RenderPass& render_pass,
+				const gltf::MaterialGPU& material
 			) const noexcept override;
 
 			void set_skin(
-				const gpu::Render_pass& render_pass,
-				const gltf::Deferred_skinning_resource& skinning_resource
+				const gpu::RenderPass& render_pass,
+				const gltf::DeferredSkinningResource& skinning_resource
 			) const noexcept override;
 
 			void draw(
-				const gpu::Command_buffer& command_buffer,
-				const gpu::Render_pass& render_pass,
-				const gltf::Primitive_drawcall& drawcall
+				const gpu::CommandBuffer& command_buffer,
+				const gpu::RenderPass& render_pass,
+				const gltf::PrimitiveDrawcall& drawcall
 			) const noexcept override;
 		};
 
 	  public:
 
-		Shadow_gltf(const Shadow_gltf&) = delete;
-		Shadow_gltf(Shadow_gltf&&) = default;
-		Shadow_gltf& operator=(const Shadow_gltf&) = delete;
-		Shadow_gltf& operator=(Shadow_gltf&&) = default;
+		ShadowGLTF(const ShadowGLTF&) = delete;
+		ShadowGLTF(ShadowGLTF&&) = default;
+		ShadowGLTF& operator=(const ShadowGLTF&) = delete;
+		ShadowGLTF& operator=(ShadowGLTF&&) = default;
 
-		static std::expected<Shadow_gltf, util::Error> create(SDL_GPUDevice* device) noexcept;
+		static std::expected<ShadowGLTF, util::Error> create(SDL_GPUDevice* device) noexcept;
 
 		std::expected<void, util::Error> render(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Shadow& shadow_target,
 			const drawdata::Shadow& drawdata
 		) const noexcept;

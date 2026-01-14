@@ -275,7 +275,7 @@ namespace logic
 
 	void Environment::hud_ui(
 		std::span<const glm::mat4> node_matrices,
-		const render::Camera_matrices& camera_matrices
+		const render::CameraMatrices& camera_matrices
 	) const noexcept
 	{
 		const auto view_proj_mat = camera_matrices.proj_matrix * camera_matrices.view_matrix;
@@ -341,7 +341,7 @@ namespace logic
 		return outdoor_climate;
 	}
 
-	Environment::Update_result Environment::update(double sim_time) noexcept
+	Environment::UpdateResult Environment::update(double sim_time) noexcept
 	{
 		static thread_local std::mt19937 rng{std::random_device{}()};
 		std::normal_distribution<double> noise_dist(1.0, 0.3);
@@ -378,7 +378,7 @@ namespace logic
 
 		prev_sim_time = sim_time;
 
-		Update_result result;
+		UpdateResult result;
 		for (const auto& [area, climate] : area_climates)
 		{
 			if (climate.pm2_5 >= fire_pm25_threshold || climate.carbon_oxide >= fire_co_threshold)

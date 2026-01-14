@@ -25,9 +25,9 @@ namespace render::target
 
 		/* Textures (CSM) */
 
-		graphics::Auto_texture depth_texture_level0{depth_format, "Shadowmap Level 0 Texture"};
-		graphics::Auto_texture depth_texture_level1{depth_format, "Shadowmap Level 1 Texture"};
-		graphics::Auto_texture depth_texture_level2{depth_format, "Shadowmap Level 2 Texture"};
+		graphics::AutoTexture depth_texture_level0{depth_format, "Shadowmap Level 0 Texture"};
+		graphics::AutoTexture depth_texture_level1{depth_format, "Shadowmap Level 1 Texture"};
+		graphics::AutoTexture depth_texture_level2{depth_format, "Shadowmap Level 2 Texture"};
 
 		/* Resize */
 

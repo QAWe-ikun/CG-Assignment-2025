@@ -22,10 +22,10 @@ namespace render
 	{
 	  public:
 
-		static std::expected<Renderer, util::Error> create(const backend::SDL_context& sdl_context) noexcept;
+		static std::expected<Renderer, util::Error> create(const backend::SDLcontext& sdl_context) noexcept;
 
 		std::expected<void, util::Error> render(
-			const backend::SDL_context& sdl_context,
+			const backend::SDLcontext& sdl_context,
 			Drawdata drawdata,
 			const Params& params
 		) noexcept;
@@ -35,8 +35,8 @@ namespace render
 		Pipeline pipeline;
 		Target target;
 
-		graphics::Buffer_pool buffer_pool;
-		graphics::Transfer_buffer_pool transfer_buffer_pool;
+		graphics::BufferPool buffer_pool;
+		graphics::TransferBufferPool transfer_buffer_pool;
 
 		std::expected<std::tuple<drawdata::Gbuffer, drawdata::Shadow>, util::Error> prepare_drawdata(
 			std::span<const gltf::Drawdata> drawdata_list,
@@ -44,73 +44,73 @@ namespace render
 		) noexcept;
 
 		std::expected<void, util::Error> copy_resources(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			std::span<const gltf::Drawdata> drawdata_list
 		) const noexcept;
 
 		std::expected<void, util::Error> render_gbuffer(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const drawdata::Gbuffer& gbuffer_drawdata,
 			const Params& params
 		) const noexcept;
 
 		std::expected<void, util::Error> render_ao(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const Params& params
 		) const noexcept;
 
 		std::expected<void, util::Error> render_lighting(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const drawdata::Shadow& shadow_drawdata,
 			const Params& params,
 			glm::u32vec2 swapchain_size
 		) const noexcept;
 
 		std::expected<void, util::Error> render_lights(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Gbuffer& gbuffer_target,
-			const target::Light_buffer& light_buffer_target,
+			const target::LightBuffer& light_buffer_target,
 			std::span<const drawdata::Light> lights,
 			const Params& params,
 			glm::u32vec2 swapchain_size
 		) const noexcept;
 
 		std::expected<void, util::Error> render_ssgi(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const drawdata::Gbuffer& gbuffer_drawdata,
 			const Params& params,
 			glm::u32vec2 swapchain_size
 		) const noexcept;
 
 		std::expected<void, util::Error> compute_auto_exposure(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			glm::u32vec2 swapchain_size
 		) const noexcept;
 
 		std::expected<void, util::Error> render_bloom(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const Params& params,
 			glm::u32vec2 swapchain_size
 		) const noexcept;
 
 		std::expected<void, util::Error> render_composite(
 			SDL_GPUDevice* device,
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const Params& params,
 			glm::u32vec2 swapchain_size,
 			SDL_GPUTexture* swapchain
 		) noexcept;
 
 		std::expected<void, util::Error> render_imgui(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			SDL_GPUTexture* swapchain
 		) const noexcept;
 
 		Renderer(
 			Pipeline pipeline,
 			Target target,
-			graphics::Buffer_pool buffer_pool,
-			graphics::Transfer_buffer_pool transfer_buffer_pool
+			graphics::BufferPool buffer_pool,
+			graphics::TransferBufferPool transfer_buffer_pool
 		) :
 			pipeline(std::move(pipeline)),
 			target(std::move(target)),

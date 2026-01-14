@@ -22,7 +22,7 @@
 
 namespace render::pipeline
 {
-	SSGI::Initial_temporal_param SSGI::Initial_temporal_param::from_param(
+	SSGI::InitialTemporalParam SSGI::InitialTemporalParam::from_param(
 		const Param& param,
 		const glm::uvec2& resolution
 	) noexcept
@@ -46,7 +46,7 @@ namespace render::pipeline
 
 		const glm::ivec2 time_noise = {distribution(generator), distribution(generator)};
 
-		return Initial_temporal_param{
+		return InitialTemporalParam{
 			.inv_proj_mat = inv_proj_mat,
 			.proj_mat = param.proj_mat,
 			.inv_view_mat = glm::inverse(param.view_mat),
@@ -63,7 +63,7 @@ namespace render::pipeline
 		};
 	}
 
-	SSGI::Spatial_reuse_param SSGI::Spatial_reuse_param::from_param(
+	SSGI::SpatialReuseParam SSGI::SpatialReuseParam::from_param(
 		const Param& param,
 		const glm::uvec2& resolution
 	) noexcept
@@ -87,7 +87,7 @@ namespace render::pipeline
 			near_plane_corner_view.y - near_plane_center_view.y
 		};
 
-		return Spatial_reuse_param{
+		return SpatialReuseParam{
 			.inv_view_proj_mat = glm::inverse(param.proj_mat * param.view_mat),
 			.prev_view_proj_mat = param.prev_view_proj_mat,
 			.proj_mat = param.proj_mat,
@@ -103,12 +103,12 @@ namespace render::pipeline
 		};
 	}
 
-	SSGI::Radiance_composite_param SSGI::Radiance_composite_param::from_param(
+	SSGI::RadianceCompositeParam SSGI::RadianceCompositeParam::from_param(
 		const Param& param,
 		glm::u32vec2 resolution
 	) noexcept
 	{
-		return Radiance_composite_param{
+		return RadianceCompositeParam{
 			.back_projection_mat = param.prev_view_proj_mat,
 			.inv_back_projection_mat = glm::inverse(param.prev_view_proj_mat),
 			.inv_view_proj_mat = glm::inverse(param.proj_mat * param.view_mat),
@@ -119,24 +119,24 @@ namespace render::pipeline
 		};
 	}
 
-	SSGI::Radiance_blur_param SSGI::Radiance_blur_param::from_param(
+	SSGI::RadianceBlurParam SSGI::RadianceBlurParam::from_param(
 		const Param& param,
 		glm::u32vec2 resolution
 	) noexcept
 	{
-		return Radiance_blur_param{
+		return RadianceBlurParam{
 			.inv_view_proj_mat_col3 = glm::inverse(param.proj_mat * param.view_mat)[2],
 			.inv_view_proj_mat_col4 = glm::inverse(param.proj_mat * param.view_mat)[3],
 			.comp_resolution = (resolution + 1u) / 2u
 		};
 	}
 
-	SSGI::Radiance_upsample_param SSGI::Radiance_upsample_param::from_param(
+	SSGI::RadianceUpsampleParam SSGI::RadianceUpsampleParam::from_param(
 		const Param& param,
 		glm::u32vec2 resolution
 	) noexcept
 	{
-		return Radiance_upsample_param{
+		return RadianceUpsampleParam{
 			.inv_view_proj_mat_col3 = glm::inverse(param.proj_mat * param.view_mat)[2],
 			.inv_view_proj_mat_col4 = glm::inverse(param.proj_mat * param.view_mat)[3],
 			.comp_resolution = (resolution + 1u) / 2u,
@@ -169,33 +169,33 @@ namespace render::pipeline
 
 		/* Create Samplers */
 
-		const auto linear_sampler_create_info = gpu::Sampler::Create_info{
+		const auto linear_sampler_create_info = gpu::Sampler::CreateInfo{
 			.min_filter = gpu::Sampler::Filter::Linear,
 			.mag_filter = gpu::Sampler::Filter::Linear,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
-			.address_mode_u = gpu::Sampler::Address_mode::Repeat,
-			.address_mode_v = gpu::Sampler::Address_mode::Repeat,
-			.address_mode_w = gpu::Sampler::Address_mode::Repeat
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
+			.address_mode_u = gpu::Sampler::AddressMode::Repeat,
+			.address_mode_v = gpu::Sampler::AddressMode::Repeat,
+			.address_mode_w = gpu::Sampler::AddressMode::Repeat
 		};
 
-		const auto nearest_sampler_create_info = gpu::Sampler::Create_info{
+		const auto nearest_sampler_create_info = gpu::Sampler::CreateInfo{
 			.min_filter = gpu::Sampler::Filter::Nearest,
 			.mag_filter = gpu::Sampler::Filter::Nearest,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
-			.address_mode_u = gpu::Sampler::Address_mode::Clamp_to_edge,
-			.address_mode_v = gpu::Sampler::Address_mode::Clamp_to_edge,
-			.address_mode_w = gpu::Sampler::Address_mode::Clamp_to_edge,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
+			.address_mode_u = gpu::Sampler::AddressMode::Clamp_to_edge,
+			.address_mode_v = gpu::Sampler::AddressMode::Clamp_to_edge,
+			.address_mode_w = gpu::Sampler::AddressMode::Clamp_to_edge,
 			.min_lod = 0,
 			.max_lod = 10
 		};
 
-		const auto noise_sampler_create_info = gpu::Sampler::Create_info{
+		const auto noise_sampler_create_info = gpu::Sampler::CreateInfo{
 			.min_filter = gpu::Sampler::Filter::Nearest,
 			.mag_filter = gpu::Sampler::Filter::Nearest,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
-			.address_mode_u = gpu::Sampler::Address_mode::Repeat,
-			.address_mode_v = gpu::Sampler::Address_mode::Repeat,
-			.address_mode_w = gpu::Sampler::Address_mode::Repeat
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
+			.address_mode_u = gpu::Sampler::AddressMode::Repeat,
+			.address_mode_v = gpu::Sampler::AddressMode::Repeat,
+			.address_mode_w = gpu::Sampler::AddressMode::Repeat
 		};
 
 		auto nearest_sampler = gpu::Sampler::create(device, nearest_sampler_create_info);
@@ -207,7 +207,7 @@ namespace render::pipeline
 
 		/* Create Pipeline */
 
-		const gpu::Compute_pipeline::Create_info initial_pipeline_create_info{
+		const gpu::ComputePipeline::CreateInfo initial_pipeline_create_info{
 			.shader_data = shader_asset::init_temporal_comp,
 			.num_samplers = 11,
 			.num_readwrite_storage_textures = 5,
@@ -217,7 +217,7 @@ namespace render::pipeline
 			.threadcount_z = 1
 		};
 
-		const gpu::Compute_pipeline::Create_info spatial_reuse_pipeline_create_info{
+		const gpu::ComputePipeline::CreateInfo spatial_reuse_pipeline_create_info{
 			.shader_data = shader_asset::spatial_reuse_comp,
 			.num_samplers = 13,
 			.num_readwrite_storage_textures = 4,
@@ -228,10 +228,10 @@ namespace render::pipeline
 		};
 
 		auto initial_pipeline =
-			gpu::Compute_pipeline::create(device, initial_pipeline_create_info, "SSGI Trace Pipeline");
+			gpu::ComputePipeline::create(device, initial_pipeline_create_info, "SSGI Trace Pipeline");
 		if (!initial_pipeline) return initial_pipeline.error().forward("Create SSGI pipeline failed");
 
-		auto spatial_reuse_pipeline = gpu::Compute_pipeline::create(
+		auto spatial_reuse_pipeline = gpu::ComputePipeline::create(
 			device,
 			spatial_reuse_pipeline_create_info,
 			"SSGI Spatial Reuse Pipeline"
@@ -239,9 +239,9 @@ namespace render::pipeline
 		if (!spatial_reuse_pipeline)
 			return spatial_reuse_pipeline.error().forward("Create SSGI spatial reuse pipeline failed");
 
-		auto radiance_composite_pipeline = gpu::Compute_pipeline::create(
+		auto radiance_composite_pipeline = gpu::ComputePipeline::create(
 			device,
-			gpu::Compute_pipeline::Create_info{
+			gpu::ComputePipeline::CreateInfo{
 				.shader_data = shader_asset::diffuse_composite_comp,
 				.num_samplers = 9,
 				.num_readwrite_storage_textures = 1,
@@ -257,9 +257,9 @@ namespace render::pipeline
 				"Create SSGI radiance composite pipeline failed"
 			);
 
-		auto radiance_blur_pipeline = gpu::Compute_pipeline::create(
+		auto radiance_blur_pipeline = gpu::ComputePipeline::create(
 			device,
-			gpu::Compute_pipeline::Create_info{
+			gpu::ComputePipeline::CreateInfo{
 				.shader_data = shader_asset::diffuse_blur_comp,
 				.num_samplers = 4,
 				.num_readwrite_storage_textures = 1,
@@ -273,9 +273,9 @@ namespace render::pipeline
 		if (!radiance_blur_pipeline)
 			return radiance_blur_pipeline.error().forward("Create SSGI radiance blur pipeline failed");
 
-		auto radiance_upsample_pipeline = gpu::Compute_pipeline::create(
+		auto radiance_upsample_pipeline = gpu::ComputePipeline::create(
 			device,
-			gpu::Compute_pipeline::Create_info{
+			gpu::ComputePipeline::CreateInfo{
 				.shader_data = shader_asset::radiance_upsample_comp,
 				.num_samplers = 5,
 				.num_readwrite_storage_textures = 1,
@@ -291,10 +291,10 @@ namespace render::pipeline
 				"Create SSGI radiance upsample pipeline failed"
 			);
 
-		const auto radiance_add_shader = gpu::Graphics_shader::create(
+		const auto radiance_add_shader = gpu::GraphicsShader::create(
 			device,
 			shader_asset::radiance_add_frag,
-			gpu::Graphics_shader::Stage::Fragment,
+			gpu::GraphicsShader::Stage::Fragment,
 			1,
 			0,
 			0,
@@ -303,13 +303,13 @@ namespace render::pipeline
 		if (!radiance_add_shader)
 			return radiance_add_shader.error().forward("Create SSGI radiance add shader failed");
 
-		auto radiance_add_pass = graphics::Fullscreen_pass<true>::create(
+		auto radiance_add_pass = graphics::FullscreenPass<true>::create(
 			device,
 			*radiance_add_shader,
-			target::Light_buffer::light_buffer_format,
+			target::LightBuffer::light_buffer_format,
 			{.clear_before_render = false,
 			 .do_cycle = false,
-			 .blend_mode = graphics::Fullscreen_blend_mode::Add},
+			 .blend_mode = graphics::FullscreenBlendMode::Add},
 			"SSGI Radiance Add Pipeline"
 		);
 		if (!radiance_add_pass)
@@ -330,8 +330,8 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> SSGI::render(
-		const gpu::Command_buffer& command_buffer,
-		const target::Light_buffer& light_buffer,
+		const gpu::CommandBuffer& command_buffer,
+		const target::LightBuffer& light_buffer,
 		const target::Gbuffer& gbuffer,
 		const target::SSGI& ssgi_target,
 		const Param& param,
@@ -375,8 +375,8 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> SSGI::run_initial_sample(
-		const gpu::Command_buffer& command_buffer,
-		const target::Light_buffer& light_buffer,
+		const gpu::CommandBuffer& command_buffer,
+		const target::LightBuffer& light_buffer,
 		const target::Gbuffer& gbuffer,
 		const target::SSGI& ssgi_target,
 		const Param& param,
@@ -386,8 +386,7 @@ namespace render::pipeline
 		const auto half_res = (resolution + 1u) / 2u;
 		const auto dispatch_size = (half_res + 7u) / 8u;
 
-		const Initial_temporal_param initial_sample_param =
-			Initial_temporal_param::from_param(param, resolution);
+		const InitialTemporalParam initial_sample_param = InitialTemporalParam::from_param(param, resolution);
 		command_buffer.push_uniform_to_compute(0, util::as_bytes(initial_sample_param));
 
 		const SDL_GPUStorageTextureReadWriteBinding write_binding_texture1{
@@ -453,7 +452,7 @@ namespace render::pipeline
 			write_bindings,
 			{},
 			[this, &light_buffer, &gbuffer, &ssgi_target, dispatch_size](
-				const gpu::Compute_pass& compute_pass
+				const gpu::ComputePass& compute_pass
 			) {
 				compute_pass.bind_pipeline(initial_pipeline);
 				compute_pass.bind_samplers(
@@ -482,14 +481,14 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> SSGI::run_spatial_reuse(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer,
 		const target::SSGI& ssgi_target,
 		const Param& param,
 		glm::u32vec2 resolution
 	) const noexcept
 	{
-		const Spatial_reuse_param spatial_reuse_param = Spatial_reuse_param::from_param(param, resolution);
+		const SpatialReuseParam spatial_reuse_param = SpatialReuseParam::from_param(param, resolution);
 		command_buffer.push_uniform_to_compute(0, util::as_bytes(spatial_reuse_param));
 
 		const auto dispatch_size = (spatial_reuse_param.comp_resolution + 7u) / 8u;
@@ -541,7 +540,7 @@ namespace render::pipeline
 		auto result = command_buffer.run_compute_pass(
 			write_bindings,
 			{},
-			[this, &gbuffer, &ssgi_target, dispatch_size](const gpu::Compute_pass& compute_pass) {
+			[this, &gbuffer, &ssgi_target, dispatch_size](const gpu::ComputePass& compute_pass) {
 				compute_pass.bind_pipeline(spatial_reuse_pipeline);
 				compute_pass.bind_samplers(
 					0,
@@ -568,15 +567,15 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> SSGI::run_radiance_composite(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer,
 		const target::SSGI& ssgi_target,
 		const Param& param,
 		glm::u32vec2 resolution
 	) const noexcept
 	{
-		const Radiance_composite_param radiance_composite_param =
-			Radiance_composite_param::from_param(param, resolution);
+		const RadianceCompositeParam radiance_composite_param =
+			RadianceCompositeParam::from_param(param, resolution);
 		command_buffer.push_uniform_to_compute(0, util::as_bytes(radiance_composite_param));
 
 		const auto dispatch_size = (radiance_composite_param.comp_resolution + 15u) / 16u;
@@ -595,7 +594,7 @@ namespace render::pipeline
 		auto result = command_buffer.run_compute_pass(
 			std::array{write_binding_texture},
 			{},
-			[this, &gbuffer, &ssgi_target, dispatch_size](const gpu::Compute_pass& compute_pass) {
+			[this, &gbuffer, &ssgi_target, dispatch_size](const gpu::ComputePass& compute_pass) {
 				compute_pass.bind_pipeline(radiance_composite_pipeline);
 				compute_pass.bind_samplers(
 					0,
@@ -618,14 +617,14 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> SSGI::run_radiance_blur(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer,
 		const target::SSGI& ssgi_target,
 		const Param& param,
 		glm::u32vec2 resolution
 	) const noexcept
 	{
-		const Radiance_blur_param radiance_blur_param = Radiance_blur_param::from_param(param, resolution);
+		const RadianceBlurParam radiance_blur_param = RadianceBlurParam::from_param(param, resolution);
 		command_buffer.push_uniform_to_compute(0, util::as_bytes(radiance_blur_param));
 
 		const auto dispatch_size = (radiance_blur_param.comp_resolution + 15u) / 16u;
@@ -644,7 +643,7 @@ namespace render::pipeline
 		auto result = command_buffer.run_compute_pass(
 			std::array{write_binding_texture},
 			{},
-			[this, &ssgi_target, &gbuffer, dispatch_size](const gpu::Compute_pass& compute_pass) {
+			[this, &ssgi_target, &gbuffer, dispatch_size](const gpu::ComputePass& compute_pass) {
 				compute_pass.bind_pipeline(radiance_blur_pipeline);
 				compute_pass.bind_samplers(
 					0,
@@ -662,15 +661,15 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> SSGI::run_radiance_upsample(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer,
 		const target::SSGI& ssgi_target,
 		const Param& param,
 		glm::u32vec2 resolution
 	) const noexcept
 	{
-		const Radiance_upsample_param radiance_upsample_param =
-			Radiance_upsample_param::from_param(param, resolution);
+		const RadianceUpsampleParam radiance_upsample_param =
+			RadianceUpsampleParam::from_param(param, resolution);
 		command_buffer.push_uniform_to_compute(0, util::as_bytes(radiance_upsample_param));
 
 		const auto dispatch_size = (radiance_upsample_param.full_resolution + 15u) / 16u;
@@ -689,7 +688,7 @@ namespace render::pipeline
 		auto result = command_buffer.run_compute_pass(
 			std::array{write_binding_texture},
 			{},
-			[this, &ssgi_target, &gbuffer, dispatch_size](const gpu::Compute_pass& compute_pass) {
+			[this, &ssgi_target, &gbuffer, dispatch_size](const gpu::ComputePass& compute_pass) {
 				compute_pass.bind_pipeline(radiance_upsample_pipeline);
 				compute_pass.bind_samplers(
 					0,
@@ -708,8 +707,8 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> SSGI::render_radiance_add(
-		const gpu::Command_buffer& command_buffer,
-		const target::Light_buffer& light_buffer,
+		const gpu::CommandBuffer& command_buffer,
+		const target::LightBuffer& light_buffer,
 		const target::SSGI& ssgi_target,
 		glm::u32vec2 resolution [[maybe_unused]]
 	) const noexcept

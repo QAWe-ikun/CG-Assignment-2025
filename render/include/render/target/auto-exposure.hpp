@@ -6,7 +6,7 @@
 
 namespace render::target
 {
-	class Auto_exposure
+	class AutoExposure
 	{
 	  public:
 
@@ -24,7 +24,7 @@ namespace render::target
 		///
 		/// @return Auto exposure resource on success, or an error on failure
 		///
-		static std::expected<Auto_exposure, util::Error> create(SDL_GPUDevice* device) noexcept;
+		static std::expected<AutoExposure, util::Error> create(SDL_GPUDevice* device) noexcept;
 
 		///
 		/// @brief Cycle internal resource. Called exactly once every frame.
@@ -41,13 +41,13 @@ namespace render::target
 
 	  private:
 
-		struct Bin_buffer_struct
+		struct BinBuffeStruct
 		{
 			uint32_t bins[bin_count];
 			uint32_t sum;
 		};
 
-		struct Result_buffer_struct
+		struct ResultBufferStruct
 		{
 			float avg_brightness;
 			float exposure_mult;
@@ -57,17 +57,17 @@ namespace render::target
 		std::vector<gpu::Buffer> result_buffer;
 		uint32_t current_idx = 0;
 
-		Auto_exposure(gpu::Buffer bin_buffer, std::vector<gpu::Buffer> result_buffer) noexcept :
+		AutoExposure(gpu::Buffer bin_buffer, std::vector<gpu::Buffer> result_buffer) noexcept :
 			bin_buffer(std::move(bin_buffer)),
 			result_buffer(std::move(result_buffer))
 		{}
 
 	  public:
 
-		Auto_exposure(const Auto_exposure&) = delete;
-		Auto_exposure(Auto_exposure&&) = default;
-		Auto_exposure& operator=(const Auto_exposure&) = delete;
-		Auto_exposure& operator=(Auto_exposure&&) = default;
-		~Auto_exposure() = default;
+		AutoExposure(const AutoExposure&) = delete;
+		AutoExposure(AutoExposure&&) = default;
+		AutoExposure& operator=(const AutoExposure&) = delete;
+		AutoExposure& operator=(AutoExposure&&) = default;
+		~AutoExposure() = default;
 	};
 }

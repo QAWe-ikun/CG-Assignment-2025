@@ -4,7 +4,7 @@
 
 namespace render
 {
-	enum class Antialias_mode
+	enum class AntialiasMode
 	{
 		None,
 		FXAA,
@@ -12,7 +12,7 @@ namespace render
 		SMAA
 	};
 
-	struct Camera_matrices
+	struct CameraMatrices
 	{
 		glm::mat4 view_matrix;
 		glm::mat4 proj_matrix;
@@ -20,13 +20,13 @@ namespace render
 		glm::vec3 eye_position;
 	};
 
-	struct Primary_light_params
+	struct PrimaryLightParams
 	{
 		glm::vec3 direction;
 		glm::vec3 intensity;
 	};
 
-	struct Ambient_params
+	struct AmbientParams
 	{
 		glm::vec3 intensity = glm::vec3(50);
 		float ao_radius = 70.0;
@@ -34,25 +34,25 @@ namespace render
 		float ao_strength = 1.0;
 	};
 
-	struct Bloom_params
+	struct BloomParams
 	{
 		float bloom_attenuation = 1.2;
 		float bloom_strength = 0.025;
 	};
 
-	struct Shadow_params
+	struct ShadowParams
 	{
 		float csm_linear_blend = 0.56;
 	};
 
-	struct Sky_params
+	struct SkyParams
 	{
 		float brightness;
 		float turbidity = 2.0;
 		float brightness_mult = 0.1;
 	};
 
-	struct Function_mask
+	struct FunctionMask
 	{
 		bool ssgi = true;
 		bool use_bloom_mask = true;
@@ -60,16 +60,13 @@ namespace render
 
 	struct Params
 	{
-		Antialias_mode aa_mode = Antialias_mode::MLAA;
-		Camera_matrices camera;
-		Primary_light_params primary_light;
-		Ambient_params ambient = {};
-		Bloom_params bloom = {};
-		Shadow_params shadow = {};
-		Sky_params sky = {};
-		Function_mask function_mask = {};
+		AntialiasMode aa_mode = AntialiasMode::MLAA;
+		CameraMatrices camera;
+		PrimaryLightParams primary_light;
+		AmbientParams ambient = {};
+		BloomParams bloom = {};
+		ShadowParams shadow = {};
+		SkyParams sky = {};
+		FunctionMask function_mask = {};
 	};
-
-	struct Light_drawcall
-	{};
 }

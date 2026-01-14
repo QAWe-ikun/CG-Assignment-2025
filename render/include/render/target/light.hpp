@@ -16,7 +16,7 @@ namespace render::target
 	/// - `B`: Blue Channel
 	/// - `A`: Unused
 	///
-	struct Light_buffer
+	struct LightBuffer
 	{
 		// Light Buffer Texture Format
 		static constexpr gpu::Texture::Format light_buffer_format = {
@@ -25,7 +25,7 @@ namespace render::target
 			.usage = {.sampler = true, .color_target = true, .compute_storage_read = true}
 		};
 
-		graphics::Cycle_texture light_texture{
+		graphics::CycleTexture light_texture{
 			light_buffer_format,
 			"Physical Light Texture"
 		};  // Light Buffer Texture

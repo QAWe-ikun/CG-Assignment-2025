@@ -70,7 +70,7 @@ namespace render::drawdata
 		}
 	}
 
-	void Shadow::CSM_level_data::append(const gltf::Drawdata& drawdata) noexcept
+	void Shadow::ShadowLevelData::append(const gltf::Drawdata& drawdata) noexcept
 	{
 		const auto current_resource_set_idx = resource_sets.size();
 		resource_sets.emplace_back(
@@ -117,7 +117,7 @@ namespace render::drawdata
 		}
 	}
 
-	glm::mat4 Shadow::CSM_level_data::get_vp_matrix() const noexcept
+	glm::mat4 Shadow::ShadowLevelData::get_vp_matrix() const noexcept
 	{
 		const auto projection_matrix = glm::ortho(
 			smallest_bound.left,
@@ -131,7 +131,7 @@ namespace render::drawdata
 		return projection_matrix * smallest_bound.view_matrix;
 	}
 
-	void Shadow::CSM_level_data::sort() noexcept
+	void Shadow::ShadowLevelData::sort() noexcept
 	{
 		for (auto& drawcall_vec : drawcalls | std::views::values)
 			std::ranges::sort(drawcall_vec, {}, &Drawcall::min_z);

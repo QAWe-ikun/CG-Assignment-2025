@@ -27,10 +27,10 @@ namespace render
 	/// @param light_buffer Light Buffer Target
 	/// @return Acquired Render Pass
 	///
-	std::expected<gpu::Render_pass, util::Error> acquire_gbuffer_pass(
-		const gpu::Command_buffer& command_buffer,
+	std::expected<gpu::RenderPass, util::Error> acquire_gbuffer_pass(
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer,
-		const target::Light_buffer& light_buffer
+		const target::LightBuffer& light_buffer
 	) noexcept;
 
 	///
@@ -45,9 +45,9 @@ namespace render
 	/// @param light_buffer Light Buffer Target
 	/// @return Acquired Render Pass
 	///
-	std::expected<gpu::Render_pass, util::Error> acquire_lighting_pass(
-		const gpu::Command_buffer& command_buffer,
-		const target::Light_buffer& light_buffer,
+	std::expected<gpu::RenderPass, util::Error> acquire_lighting_pass(
+		const gpu::CommandBuffer& command_buffer,
+		const target::LightBuffer& light_buffer,
 		const target::Gbuffer& gbuffer
 	) noexcept;
 
@@ -63,8 +63,8 @@ namespace render
 	/// @param shadow_target Shadow Target
 	/// @return Acquired Render Pass
 	///
-	std::expected<gpu::Render_pass, util::Error> acquire_shadow_pass(
-		const gpu::Command_buffer& command_buffer,
+	std::expected<gpu::RenderPass, util::Error> acquire_shadow_pass(
+		const gpu::CommandBuffer& command_buffer,
 		const target::Shadow& shadow_target,
 		size_t level
 	) noexcept;
@@ -81,8 +81,8 @@ namespace render
 	/// @param ao_target AO Target
 	/// @return Acquired Render Pass
 	///
-	std::expected<gpu::Render_pass, util::Error> acquire_ao_pass(
-		const gpu::Command_buffer& command_buffer,
+	std::expected<gpu::RenderPass, util::Error> acquire_ao_pass(
+		const gpu::CommandBuffer& command_buffer,
 		const target::AO& ao_target
 	) noexcept;
 
@@ -98,8 +98,8 @@ namespace render
 	/// @param swapchain_texture Swapchain Texture
 	/// @return Acquired Render Pass
 	///
-	std::expected<gpu::Render_pass, util::Error> acquire_swapchain_pass(
-		const gpu::Command_buffer& command_buffer,
+	std::expected<gpu::RenderPass, util::Error> acquire_swapchain_pass(
+		const gpu::CommandBuffer& command_buffer,
 		SDL_GPUTexture* swapchain_texture,
 		bool clear
 	) noexcept;

@@ -16,7 +16,7 @@
 
 namespace render
 {
-	std::expected<Renderer, util::Error> Renderer::create(const backend::SDL_context& sdl_context) noexcept
+	std::expected<Renderer, util::Error> Renderer::create(const backend::SDLcontext& sdl_context) noexcept
 	{
 		auto pipeline = Pipeline::create(sdl_context);
 		if (!pipeline) return pipeline.error().forward("Create pipeline failed");
@@ -27,8 +27,8 @@ namespace render
 		return Renderer(
 			std::move(*pipeline),
 			std::move(*target),
-			graphics::Buffer_pool(sdl_context.device),
-			graphics::Transfer_buffer_pool(sdl_context.device)
+			graphics::BufferPool(sdl_context.device),
+			graphics::TransferBufferPool(sdl_context.device)
 		);
 	}
 
@@ -73,7 +73,7 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::render_gbuffer(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const drawdata::Gbuffer& gbuffer_drawdata,
 		const Params& params [[maybe_unused]]
 	) const noexcept
@@ -97,7 +97,7 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::copy_resources(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		std::span<const gltf::Drawdata> drawdata_list
 	) const noexcept
 	{
@@ -108,7 +108,7 @@ namespace render
 		backend::imgui_upload_data(command_buffer);
 
 		const auto copy_deferred_result =
-			command_buffer.run_copy_pass([&deferred_resources](const gpu::Copy_pass& copy_pass) {
+			command_buffer.run_copy_pass([&deferred_resources](const gpu::CopyPass& copy_pass) {
 				for (const auto& deferred_data : deferred_resources)
 					deferred_data->upload_gpu_buffers(copy_pass);
 			});
@@ -119,7 +119,7 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::render_ao(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const Params& params
 	) const noexcept
 	{
@@ -142,7 +142,7 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::render_lighting(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const drawdata::Shadow& shadow_drawdata,
 		const Params& params,
 		glm::u32vec2 swapchain_size
@@ -158,12 +158,12 @@ namespace render
 			.light_color = params.primary_light.intensity / REF_LUMINANCE
 		};
 
-		const pipeline::Ambient_light::Param ambient_light_params = {
+		const pipeline::AmbientLight::Param ambient_light_params = {
 			.ambient_intensity = params.ambient.intensity / REF_LUMINANCE,
 			.ao_strength = params.ambient.ao_strength
 		};
 
-		const pipeline::Sky_preetham::Params sky_params = {
+		const pipeline::SkyPreetham::Params sky_params = {
 			.camera_mat_inv = glm::inverse(params.camera.proj_matrix * params.camera.view_matrix),
 			.screen_size = swapchain_size,
 			.eye_position = params.camera.eye_position,
@@ -199,9 +199,9 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::render_lights(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer_target,
-		const target::Light_buffer& light_buffer_target,
+		const target::LightBuffer& light_buffer_target,
 		std::span<const drawdata::Light> lights,
 		const Params& params,
 		glm::u32vec2 swapchain_size
@@ -222,7 +222,7 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::render_ssgi(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const drawdata::Gbuffer& gbuffer_drawdata,
 		const Params& params,
 		glm::u32vec2 swapchain_size
@@ -250,11 +250,11 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::compute_auto_exposure(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		glm::u32vec2 swapchain_size
 	) const noexcept
 	{
-		const pipeline::Auto_exposure::Params auto_exposure_params = {
+		const pipeline::AutoExposure::Params auto_exposure_params = {
 			.min_luminance = EXPOSURE_MIN,
 			.max_luminance = EXPOSURE_MAX,
 			.eye_adaptation_rate = EXPOSURE_EYE_ADAPTATION_RATE,
@@ -275,7 +275,7 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::render_bloom(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const Params& params,
 		glm::u32vec2 swapchain_size
 	) const noexcept
@@ -300,7 +300,7 @@ namespace render
 
 	std::expected<void, util::Error> Renderer::render_composite(
 		SDL_GPUDevice* device,
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const Params& params,
 		glm::u32vec2 swapchain_size,
 		SDL_GPUTexture* swapchain
@@ -335,7 +335,7 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::render_imgui(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		SDL_GPUTexture* swapchain
 	) const noexcept
 	{
@@ -350,7 +350,7 @@ namespace render
 	}
 
 	std::expected<void, util::Error> Renderer::render(
-		const backend::SDL_context& sdl_context,
+		const backend::SDLcontext& sdl_context,
 		Drawdata drawdata,
 		const Params& params
 	) noexcept
@@ -363,7 +363,7 @@ namespace render
 
 		/* Acquire Command Buffer */
 
-		auto command_buffer = gpu::Command_buffer::acquire_from(sdl_context.device);
+		auto command_buffer = gpu::CommandBuffer::acquire_from(sdl_context.device);
 		if (!command_buffer) return command_buffer.error().forward("Acquire command buffer failed");
 
 		const auto swapchain_acquire_result =

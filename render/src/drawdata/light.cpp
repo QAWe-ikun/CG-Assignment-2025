@@ -6,7 +6,7 @@ namespace render::drawdata
 		const glm::mat4& node_transform,
 		const glm::mat4& volume_transform,
 		const gltf::Light& light,
-		std::shared_ptr<const Light_volume> volume
+		std::shared_ptr<const LightVolume> volume
 	) noexcept
 	{
 		return {

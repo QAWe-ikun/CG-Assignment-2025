@@ -8,22 +8,22 @@
 
 namespace render::pipeline
 {
-	std::expected<Sky_preetham, util::Error> Sky_preetham::create(SDL_GPUDevice* device) noexcept
+	std::expected<SkyPreetham, util::Error> SkyPreetham::create(SDL_GPUDevice* device) noexcept
 	{
-		const auto sampler_nearest_info = gpu::Sampler::Create_info{
+		const auto sampler_nearest_info = gpu::Sampler::CreateInfo{
 			.min_filter = gpu::Sampler::Filter::Nearest,
 			.mag_filter = gpu::Sampler::Filter::Nearest,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
 			.max_lod = 0.0f
 		};
 
 		auto sampler = gpu::Sampler::create(device, sampler_nearest_info);
 		if (!sampler) return sampler.error().forward("Create sky sampler failed");
 
-		auto fragment_shader = gpu::Graphics_shader::create(
+		auto fragment_shader = gpu::GraphicsShader::create(
 			device,
 			shader_asset::sky_preetham_frag,
-			gpu::Graphics_shader::Stage::Fragment,
+			gpu::GraphicsShader::Stage::Fragment,
 			0,
 			0,
 			0,
@@ -31,13 +31,13 @@ namespace render::pipeline
 		);
 		if (!fragment_shader) return fragment_shader.error().forward("Create sky fragment shader failed");
 
-		auto fullscreen_pass = graphics::Fullscreen_pass<false>::create(
+		auto FullscreenPass = graphics::FullscreenPass<false>::create(
 			device,
 			*fragment_shader,
-			target::Light_buffer::light_buffer_format,
+			target::LightBuffer::light_buffer_format,
 			"Sky Preetham Pipeline",
-			graphics::Fullscreen_blend_mode::Add,
-			graphics::Fullscreen_stencil_state{
+			graphics::FullscreenBlendMode::Add,
+			graphics::FullscreenStencilState{
 				.depth_format = target::Gbuffer::depth_format.format,
 				.enable_stencil_test = true,
 				.compare_mask = 0xFF,
@@ -46,9 +46,9 @@ namespace render::pipeline
 				.reference = 0x00
 			}
 		);
-		if (!fullscreen_pass) return fullscreen_pass.error().forward("Create sky fullscreen pass failed");
+		if (!FullscreenPass) return FullscreenPass.error().forward("Create sky fullscreen pass failed");
 
-		return Sky_preetham(std::move(*sampler), std::move(*fullscreen_pass));
+		return SkyPreetham(std::move(*sampler), std::move(*FullscreenPass));
 	}
 
 	static float zenith_chromacity(
@@ -78,7 +78,7 @@ namespace render::pipeline
 			* (1.f + C * glm::exp(D * gamma) + E * glm::cos(gamma) * glm::cos(gamma));
 	}
 
-	Sky_preetham::Preetham_params::Preetham_params(float turbidity, glm::vec3 sun_direction) noexcept
+	SkyPreetham::PreethamParam::PreethamParam(float turbidity, glm::vec3 sun_direction) noexcept
 	{
 		const float sunTheta = glm::acos(glm::clamp(sun_direction.y, 0.f, 1.f));
 
@@ -117,7 +117,7 @@ namespace render::pipeline
 		Z.z = m_normalized_sun_y / perez(sunTheta, 0, A.z, B.z, C.z, D.z, E.z);
 	}
 
-	Sky_preetham::Internal_params::Internal_params(const Params& params) noexcept :
+	SkyPreetham::InternalParam::InternalParam(const Params& params) noexcept :
 		camera_mat_inv(params.camera_mat_inv),
 		screen_size(glm::vec2(params.screen_size)),
 		eye_position(params.eye_position),
@@ -127,17 +127,17 @@ namespace render::pipeline
 		preetham(params.turbidity, glm::normalize(params.sun_direction))
 	{}
 
-	void Sky_preetham::render(
-		const gpu::Command_buffer& command_buffer,
-		const gpu::Render_pass& render_pass,
+	void SkyPreetham::render(
+		const gpu::CommandBuffer& command_buffer,
+		const gpu::RenderPass& render_pass,
 		const Params& params
 	) const noexcept
 	{
-		const Internal_params internal_params(params);
+		const InternalParam internal_params(params);
 		command_buffer.push_uniform_to_fragment(0, util::as_bytes(internal_params));
 
 		command_buffer.push_debug_group("Sky Preetham Pass");
-		fullscreen_pass.render_to_renderpass(render_pass, {}, {}, {});
+		FullscreenPass.render_to_renderpass(render_pass, {}, {}, {});
 		command_buffer.pop_debug_group();
 	}
 }

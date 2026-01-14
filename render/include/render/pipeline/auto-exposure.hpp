@@ -13,7 +13,7 @@
 
 namespace render::pipeline
 {
-	class Auto_exposure
+	class AutoExposure
 	{
 	  public:
 
@@ -25,48 +25,48 @@ namespace render::pipeline
 			float delta_time;
 		};
 
-		static std::expected<Auto_exposure, util::Error> create(SDL_GPUDevice* device) noexcept;
+		static std::expected<AutoExposure, util::Error> create(SDL_GPUDevice* device) noexcept;
 
 		std::expected<void, util::Error> compute(
-			const gpu::Command_buffer& command_buffer,
-			const target::Auto_exposure& target,
-			const target::Light_buffer& light_buffer,
+			const gpu::CommandBuffer& command_buffer,
+			const target::AutoExposure& target,
+			const target::LightBuffer& light_buffer,
 			const Params& params,
 			glm::u32vec2 size
 		) const noexcept;
 
 	  private:
 
-		struct Internal_param_histogram
+		struct HistogramParam
 		{
 			float min_histogram_value;
 			float log_min_histogram_value;  // = log2(min)
 			float dynamic_range;            // = log2(max) - log2(min)
 			alignas(8) glm::uvec2 input_size;
 
-			static Internal_param_histogram from(const Params& params, glm::u32vec2 size) noexcept;
+			static HistogramParam from(const Params& params, glm::u32vec2 size) noexcept;
 		};
 
-		struct Internal_param_avg
+		struct AvgParam
 		{
 			float min_histogram_value;
 			float log_min_histogram_value;  // = log2(min)
 			float dynamic_range;            // = log2(max) - log2(min)
 			float adaptation_rate;
 
-			static Internal_param_avg from(const Params& params) noexcept;
+			static AvgParam from(const Params& params) noexcept;
 		};
 
-		gpu::Compute_pipeline clear_pipeline;
-		gpu::Compute_pipeline histogram_pipeline;
-		gpu::Compute_pipeline avg_pipeline;
+		gpu::ComputePipeline clear_pipeline;
+		gpu::ComputePipeline histogram_pipeline;
+		gpu::ComputePipeline avg_pipeline;
 		gpu::Texture mask_texture;
 		gpu::Sampler mask_sampler;
 
-		Auto_exposure(
-			gpu::Compute_pipeline clear_pipeline,
-			gpu::Compute_pipeline histogram_pipeline,
-			gpu::Compute_pipeline avg_pipeline,
+		AutoExposure(
+			gpu::ComputePipeline clear_pipeline,
+			gpu::ComputePipeline histogram_pipeline,
+			gpu::ComputePipeline avg_pipeline,
 			gpu::Texture mask_texture,
 			gpu::Sampler mask_sampler
 		) :
@@ -79,9 +79,9 @@ namespace render::pipeline
 
 	  public:
 
-		Auto_exposure(const Auto_exposure&) = delete;
-		Auto_exposure(Auto_exposure&&) = default;
-		Auto_exposure& operator=(const Auto_exposure&) = delete;
-		Auto_exposure& operator=(Auto_exposure&&) = default;
+		AutoExposure(const AutoExposure&) = delete;
+		AutoExposure(AutoExposure&&) = default;
+		AutoExposure& operator=(const AutoExposure&) = delete;
+		AutoExposure& operator=(AutoExposure&&) = default;
 	};
 }

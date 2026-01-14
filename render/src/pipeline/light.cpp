@@ -26,25 +26,25 @@ namespace render::pipeline
 		 .instance_step_rate = 0}
 	});
 
-	static std::expected<gpu::Graphics_shader, util::Error> create_vertex_shader(
+	static std::expected<gpu::GraphicsShader, util::Error> create_vertex_shader(
 		SDL_GPUDevice* device
 	) noexcept
 	{
 		const auto vertex_shader_data = shader_asset::light_volume_vert;
-		return gpu::Graphics_shader::
-			create(device, vertex_shader_data, gpu::Graphics_shader::Stage::Vertex, 0, 0, 0, 1)
+		return gpu::GraphicsShader::
+			create(device, vertex_shader_data, gpu::GraphicsShader::Stage::Vertex, 0, 0, 0, 1)
 				.transform_error(util::Error::forward_fn("Create point-light vertex shader failed"));
 	}
 
-	static std::expected<gpu::Graphics_shader, util::Error> create_depth_test_fragment_shader(
+	static std::expected<gpu::GraphicsShader, util::Error> create_depth_test_fragment_shader(
 		SDL_GPUDevice* device
 	) noexcept
 	{
 		const auto fragment_shader_data = shader_asset::light_volume_depth_frag;
-		return gpu::Graphics_shader::create(
+		return gpu::GraphicsShader::create(
 				   device,
 				   fragment_shader_data,
-				   gpu::Graphics_shader::Stage::Fragment,
+				   gpu::GraphicsShader::Stage::Fragment,
 				   0,
 				   0,
 				   0,
@@ -53,27 +53,27 @@ namespace render::pipeline
 			.transform_error(util::Error::forward_fn("Create point-light depth test fragment shader failed"));
 	}
 
-	static std::expected<gpu::Graphics_shader, util::Error> create_point_light_fragment_shader(
+	static std::expected<gpu::GraphicsShader, util::Error> create_point_light_fragment_shader(
 		SDL_GPUDevice* device
 	) noexcept
 	{
 		const auto fragment_shader_data = shader_asset::point_light_frag;
-		return gpu::Graphics_shader::
-			create(device, fragment_shader_data, gpu::Graphics_shader::Stage::Fragment, 3, 0, 0, 1)
+		return gpu::GraphicsShader::
+			create(device, fragment_shader_data, gpu::GraphicsShader::Stage::Fragment, 3, 0, 0, 1)
 				.transform_error(util::Error::forward_fn("Create point-light light fragment shader failed"));
 	}
 
-	static std::expected<gpu::Graphics_shader, util::Error> create_spot_light_fragment_shader(
+	static std::expected<gpu::GraphicsShader, util::Error> create_spot_light_fragment_shader(
 		SDL_GPUDevice* device
 	) noexcept
 	{
 		const auto fragment_shader_data = shader_asset::spot_light_frag;
-		return gpu::Graphics_shader::
-			create(device, fragment_shader_data, gpu::Graphics_shader::Stage::Fragment, 3, 0, 0, 1)
+		return gpu::GraphicsShader::
+			create(device, fragment_shader_data, gpu::GraphicsShader::Stage::Fragment, 3, 0, 0, 1)
 				.transform_error(util::Error::forward_fn("Create spot-light light fragment shader failed"));
 	}
 
-	static std::expected<gpu::Graphics_pipeline, util::Error> create_depth_test_pipeline(
+	static std::expected<gpu::GraphicsPipeline, util::Error> create_depth_test_pipeline(
 		SDL_GPUDevice* device
 	) noexcept
 	{
@@ -97,7 +97,7 @@ namespace render::pipeline
 			.compare_op = SDL_GPU_COMPAREOP_ALWAYS
 		};
 
-		static constexpr gpu::Graphics_pipeline::Depth_stencil_state depth_stencil_state = {
+		static constexpr gpu::GraphicsPipeline::DepthStencilState depth_stencil_state = {
 			.format = target::Gbuffer::depth_format.format,
 			.compare_op = SDL_GPU_COMPAREOP_LESS,
 			.back_stencil_state = stencil_state,
@@ -114,7 +114,7 @@ namespace render::pipeline
 		if (!vertex_shader) return vertex_shader.error();
 		if (!fragment_shader) return fragment_shader.error();
 
-		return gpu::Graphics_pipeline::create(
+		return gpu::GraphicsPipeline::create(
 				   device,
 				   *vertex_shader,
 				   *fragment_shader,
@@ -130,7 +130,7 @@ namespace render::pipeline
 			.transform_error(util::Error::forward_fn("Create depth test pipeline failed"));
 	}
 
-	static std::expected<gpu::Graphics_pipeline, util::Error> create_light_pipeline(
+	static std::expected<gpu::GraphicsPipeline, util::Error> create_light_pipeline(
 		SDL_GPUDevice* device,
 		gltf::Light::Type type,
 		bool inside
@@ -169,7 +169,7 @@ namespace render::pipeline
 			.compare_op = SDL_GPU_COMPAREOP_EQUAL
 		};
 
-		static constexpr gpu::Graphics_pipeline::Depth_stencil_state outside_depth_stencil_state = {
+		static constexpr gpu::GraphicsPipeline::DepthStencilState outside_depth_stencil_state = {
 			.format = target::Gbuffer::depth_format.format,
 			.compare_op = SDL_GPU_COMPAREOP_GREATER,
 			.front_stencil_state = outside_stencil_state,
@@ -181,7 +181,7 @@ namespace render::pipeline
 		};
 
 		// When camera is inside light volume, draw backfaces only with depth test
-		static constexpr gpu::Graphics_pipeline::Depth_stencil_state inside_depth_stencil_state = {
+		static constexpr gpu::GraphicsPipeline::DepthStencilState inside_depth_stencil_state = {
 			.format = target::Gbuffer::depth_format.format,
 			.compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL,
 			.compare_mask = 0x00,
@@ -206,11 +206,11 @@ namespace render::pipeline
 		};
 
 		static constexpr std::array color_target_descs = std::to_array<SDL_GPUColorTargetDescription>({
-			{.format = target::Light_buffer::light_buffer_format.format, .blend_state = blend_state}
+			{.format = target::LightBuffer::light_buffer_format.format, .blend_state = blend_state}
 		});
 
 		auto vertex_shader = create_vertex_shader(device);
-		auto fragment_shader = [device, type] -> std::expected<gpu::Graphics_shader, util::Error> {
+		auto fragment_shader = [device, type] -> std::expected<gpu::GraphicsShader, util::Error> {
 			switch (type)
 			{
 			case gltf::Light::Type::Point:
@@ -230,7 +230,7 @@ namespace render::pipeline
 		if (!vertex_shader) return vertex_shader.error().forward("Create light vertex shader failed");
 		if (!fragment_shader) return fragment_shader.error().forward("Create light fragment shader failed");
 
-		return gpu::Graphics_pipeline::create(
+		return gpu::GraphicsPipeline::create(
 				   device,
 				   *vertex_shader,
 				   *fragment_shader,
@@ -246,7 +246,7 @@ namespace render::pipeline
 			.transform_error(util::Error::forward_fn("Create light pipeline failed"));
 	}
 
-	Light::Point_light_param Light::Point_light_param::from(
+	Light::PointLightParam Light::PointLightParam::from(
 		const drawdata::Light& drawdata,
 		const Param& param
 	) noexcept
@@ -261,7 +261,7 @@ namespace render::pipeline
 		};
 	}
 
-	Light::Spot_light_param Light::Spot_light_param::from(
+	Light::SpotLightParam Light::SpotLightParam::from(
 		const drawdata::Light& drawdata,
 		const Param& param
 	) noexcept
@@ -302,13 +302,13 @@ namespace render::pipeline
 
 		auto nearest_sampler = gpu::Sampler::create(
 			device,
-			gpu::Sampler::Create_info{
+			gpu::Sampler::CreateInfo{
 				.min_filter = gpu::Sampler::Filter::Nearest,
 				.mag_filter = gpu::Sampler::Filter::Nearest,
-				.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
-				.address_mode_u = gpu::Sampler::Address_mode::Clamp_to_edge,
-				.address_mode_v = gpu::Sampler::Address_mode::Clamp_to_edge,
-				.address_mode_w = gpu::Sampler::Address_mode::Clamp_to_edge,
+				.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
+				.address_mode_u = gpu::Sampler::AddressMode::Clamp_to_edge,
+				.address_mode_v = gpu::Sampler::AddressMode::Clamp_to_edge,
+				.address_mode_w = gpu::Sampler::AddressMode::Clamp_to_edge,
 				.min_lod = 0.0f,
 				.max_lod = 0.0f,
 				.mip_lod_bias = 0.0f,
@@ -328,9 +328,9 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> Light::render(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer_target,
-		const target::Light_buffer& light_buffer_target,
+		const target::LightBuffer& light_buffer_target,
 		std::span<const drawdata::Light> drawdata,
 		const Param& param
 	) const noexcept
@@ -353,7 +353,7 @@ namespace render::pipeline
 		auto depth_only_pass_result = run_depth_only_pass(
 			command_buffer,
 			gbuffer_target,
-			[&, this](const gpu::Render_pass& render_pass) noexcept {
+			[&, this](const gpu::RenderPass& render_pass) noexcept {
 				render_pass.bind_pipeline(depth_test_pipeline);
 				render_pass.set_stencil_reference(0x01);
 
@@ -391,7 +391,7 @@ namespace render::pipeline
 			command_buffer,
 			gbuffer_target,
 			light_buffer_target,
-			[&, this](const gpu::Render_pass& render_pass) noexcept {
+			[&, this](const gpu::RenderPass& render_pass) noexcept {
 				render_pass.set_stencil_reference(0x01);
 
 				for (const auto& drawcall : visible_drawdata)
@@ -412,7 +412,7 @@ namespace render::pipeline
 						render_pass
 							.bind_fragment_samplers(0, albedo_binding, lighting_info_binding, depth_binding);
 
-						const auto point_light_param = Point_light_param::from(drawcall, param);
+						const auto point_light_param = PointLightParam::from(drawcall, param);
 						command_buffer.push_uniform_to_fragment(0, util::as_bytes(point_light_param));
 
 						render_pass.bind_vertex_buffers(
@@ -430,7 +430,7 @@ namespace render::pipeline
 						render_pass
 							.bind_fragment_samplers(0, albedo_binding, lighting_info_binding, depth_binding);
 
-						const auto spot_light_param = Spot_light_param::from(drawcall, param);
+						const auto spot_light_param = SpotLightParam::from(drawcall, param);
 						command_buffer.push_uniform_to_fragment(0, util::as_bytes(spot_light_param));
 
 						render_pass.bind_vertex_buffers(
@@ -450,9 +450,9 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> Light::run_depth_only_pass(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer_target,
-		const std::function<void(const gpu::Render_pass& render_pass)>& task
+		const std::function<void(const gpu::RenderPass& render_pass)>& task
 	) const noexcept
 	{
 		const SDL_GPUDepthStencilTargetInfo depth_target_info = {
@@ -472,10 +472,10 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> Light::run_light_pass(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer_target,
-		const target::Light_buffer& light_buffer_target,
-		const std::function<void(const gpu::Render_pass& render_pass)>& task
+		const target::LightBuffer& light_buffer_target,
+		const std::function<void(const gpu::RenderPass& render_pass)>& task
 	) const noexcept
 	{
 		const SDL_GPUColorTargetInfo light_buffer_target_info = {

@@ -52,17 +52,17 @@ namespace render::target
 
 		/* Textures */
 
-		graphics::Auto_texture depth_texture{depth_format, "Gbuffer Depth Texture"};  // Depth Texture
+		graphics::AutoTexture depth_texture{depth_format, "Gbuffer Depth Texture"};  // Depth Texture
 
-		graphics::Cycle_texture depth_value_texture{
+		graphics::CycleTexture depth_value_texture{
 			depth_value_format,
 			"Gbuffer Cycled Depth Texture",
 			hiz_mip_levels
 		};  // Depth Value Texture
 
-		graphics::Auto_texture albedo_texture{albedo_format, "Gbuffer Albedo Texture"};  // Albedo Texture
+		graphics::AutoTexture albedo_texture{albedo_format, "Gbuffer Albedo Texture"};  // Albedo Texture
 
-		graphics::Auto_texture lighting_info_texture{
+		graphics::AutoTexture lighting_info_texture{
 			lighting_info_format,
 			"Gbuffer Lighting Info Texture"
 		};  // Lighting Info Texture

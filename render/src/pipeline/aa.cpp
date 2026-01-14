@@ -27,24 +27,24 @@ namespace render::pipeline
 
 	std::expected<void, util::Error> Antialias::run(
 		SDL_GPUDevice* device,
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		SDL_GPUTexture* source,
 		SDL_GPUTexture* target,
 		glm::u32vec2 size,
-		Antialias_mode mode
+		AntialiasMode mode
 	) noexcept
 	{
 		command_buffer.push_debug_group("Antialiasing Pass");
 		auto result = [&] -> std::expected<void, util::Error> {
 			switch (mode)
 			{
-			case Antialias_mode::None:
+			case AntialiasMode::None:
 				return empty_processor.run_antialiasing(device, command_buffer, source, target, size);
-			case Antialias_mode::FXAA:
+			case AntialiasMode::FXAA:
 				return fxaa_processor.run_antialiasing(device, command_buffer, source, target, size);
-			case Antialias_mode::MLAA:
+			case AntialiasMode::MLAA:
 				return mlaa_processor.run_antialiasing(device, command_buffer, source, target, size);
-			case Antialias_mode::SMAA:
+			case AntialiasMode::SMAA:
 				return smaa_processor.run_antialiasing(device, command_buffer, source, target, size);
 			default:
 				return util::Error("Unknown antialiasing mode");

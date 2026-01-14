@@ -17,9 +17,9 @@
 
 namespace render::pipeline
 {
-	std::expected<Auto_exposure, util::Error> Auto_exposure::create(SDL_GPUDevice* device) noexcept
+	std::expected<AutoExposure, util::Error> AutoExposure::create(SDL_GPUDevice* device) noexcept
 	{
-		const auto clear_pipeline_info = gpu::Compute_pipeline::Create_info{
+		const auto clear_pipeline_info = gpu::ComputePipeline::CreateInfo{
 			.shader_data = shader_asset::clear_comp,
 			.num_readwrite_storage_buffers = 1,
 			.threadcount_x = 16,
@@ -27,7 +27,7 @@ namespace render::pipeline
 			.threadcount_z = 1
 		};
 
-		const auto histogram_pipeline_info = gpu::Compute_pipeline::Create_info{
+		const auto histogram_pipeline_info = gpu::ComputePipeline::CreateInfo{
 			.shader_data = shader_asset::histogram_comp,
 			.num_samplers = 1,
 			.num_readonly_storage_textures = 1,
@@ -38,7 +38,7 @@ namespace render::pipeline
 			.threadcount_z = 1
 		};
 
-		const auto avg_pipeline_info = gpu::Compute_pipeline::Create_info{
+		const auto avg_pipeline_info = gpu::ComputePipeline::CreateInfo{
 			.shader_data = shader_asset::avg_comp,
 			.num_readonly_storage_buffers = 2,
 			.num_readwrite_storage_buffers = 1,
@@ -49,20 +49,17 @@ namespace render::pipeline
 		};
 
 		auto clear_pipeline_result =
-			gpu::Compute_pipeline::create(device, clear_pipeline_info, "Auto-exposure Clear Pipeline");
+			gpu::ComputePipeline::create(device, clear_pipeline_info, "Auto-exposure Clear Pipeline");
 		if (!clear_pipeline_result)
 			return clear_pipeline_result.error().forward("Create clear pipeline failed");
 
-		auto histogram_pipeline_result = gpu::Compute_pipeline::create(
-			device,
-			histogram_pipeline_info,
-			"Auto-exposure Histogram Pipeline"
-		);
+		auto histogram_pipeline_result =
+			gpu::ComputePipeline::create(device, histogram_pipeline_info, "Auto-exposure Histogram Pipeline");
 		if (!histogram_pipeline_result)
 			return histogram_pipeline_result.error().forward("Create histogram pipeline failed");
 
 		auto avg_pipeline_result =
-			gpu::Compute_pipeline::create(device, avg_pipeline_info, "Auto-exposure Average Pipeline");
+			gpu::ComputePipeline::create(device, avg_pipeline_info, "Auto-exposure Average Pipeline");
 		if (!avg_pipeline_result)
 			return avg_pipeline_result.error().forward("Create average luminance pipeline failed");
 
@@ -86,16 +83,16 @@ namespace render::pipeline
 
 		auto mask_sampler = gpu::Sampler::create(
 			device,
-			gpu::Sampler::Create_info{
+			gpu::Sampler::CreateInfo{
 				.min_filter = gpu::Sampler::Filter::Linear,
 				.mag_filter = gpu::Sampler::Filter::Linear,
-				.address_mode_u = gpu::Sampler::Address_mode::Clamp_to_edge,
-				.address_mode_v = gpu::Sampler::Address_mode::Clamp_to_edge
+				.address_mode_u = gpu::Sampler::AddressMode::Clamp_to_edge,
+				.address_mode_v = gpu::Sampler::AddressMode::Clamp_to_edge
 			}
 		);
 		if (!mask_sampler) return mask_sampler.error().forward("Create auto exposure mask sampler failed");
 
-		return Auto_exposure(
+		return AutoExposure(
 			std::move(*clear_pipeline_result),
 			std::move(*histogram_pipeline_result),
 			std::move(*avg_pipeline_result),
@@ -104,10 +101,10 @@ namespace render::pipeline
 		);
 	}
 
-	std::expected<void, util::Error> Auto_exposure::compute(
-		const gpu::Command_buffer& command_buffer,
-		const target::Auto_exposure& target,
-		const target::Light_buffer& light_buffer,
+	std::expected<void, util::Error> AutoExposure::compute(
+		const gpu::CommandBuffer& command_buffer,
+		const target::AutoExposure& target,
+		const target::LightBuffer& light_buffer,
 		const Params& params,
 		glm::u32vec2 size
 	) const noexcept
@@ -145,7 +142,7 @@ namespace render::pipeline
 				const auto clear_pass_result = command_buffer.run_compute_pass(
 					{},
 					std::to_array({bin_buffer_binding}),
-					[this](const gpu::Compute_pass& compute_pass) {
+					[this](const gpu::ComputePass& compute_pass) {
 						compute_pass.bind_pipeline(clear_pipeline);
 						compute_pass.dispatch(1, 1, 1);
 					}
@@ -157,13 +154,13 @@ namespace render::pipeline
 
 			command_buffer.push_debug_group("Compute Histogram");
 			{
-				const auto histogram_params = Internal_param_histogram::from(params, size);
+				const auto histogram_params = HistogramParam::from(params, size);
 				command_buffer.push_uniform_to_compute(0, util::as_bytes(histogram_params));
 
 				const auto histogram_pass_result = command_buffer.run_compute_pass(
 					{},
 					std::to_array({bin_buffer_binding_not_cycle}),
-					[this, &light_buffer, size](const gpu::Compute_pass& compute_pass) {
+					[this, &light_buffer, size](const gpu::ComputePass& compute_pass) {
 						compute_pass.bind_pipeline(histogram_pipeline);
 						compute_pass.bind_samplers(0, mask_texture.bind_with_sampler(mask_sampler));
 						compute_pass.bind_storage_textures(0, light_buffer.light_texture.current());
@@ -177,13 +174,13 @@ namespace render::pipeline
 
 			command_buffer.push_debug_group("Compute Average Luminance");
 			{
-				const auto avg_params = Internal_param_avg::from(params);
+				const auto avg_params = AvgParam::from(params);
 				command_buffer.push_uniform_to_compute(0, util::as_bytes(avg_params));
 
 				const auto avg_pass_result = command_buffer.run_compute_pass(
 					{},
 					std::to_array({result_buffer_binding}),
-					[this, &bin_buffer, &prev_result_buffer](const gpu::Compute_pass& compute_pass) {
+					[this, &bin_buffer, &prev_result_buffer](const gpu::ComputePass& compute_pass) {
 						compute_pass.bind_pipeline(avg_pipeline);
 						compute_pass.bind_storage_buffers(0, bin_buffer, prev_result_buffer);
 						compute_pass.dispatch(1, 1, 1);
@@ -199,12 +196,12 @@ namespace render::pipeline
 		return {};
 	}
 
-	Auto_exposure::Internal_param_histogram Auto_exposure::Internal_param_histogram::from(
-		const Auto_exposure::Params& params,
+	AutoExposure::HistogramParam AutoExposure::HistogramParam::from(
+		const AutoExposure::Params& params,
 		glm::u32vec2 size
 	) noexcept
 	{
-		return Internal_param_histogram{
+		return HistogramParam{
 			.min_histogram_value = params.min_luminance,
 			.log_min_histogram_value = glm::log2(params.min_luminance),
 			.dynamic_range = glm::log2(params.max_luminance) - glm::log2(params.min_luminance),
@@ -212,9 +209,9 @@ namespace render::pipeline
 		};
 	}
 
-	Auto_exposure::Internal_param_avg Auto_exposure::Internal_param_avg::from(const Params& params) noexcept
+	AutoExposure::AvgParam AutoExposure::AvgParam::from(const Params& params) noexcept
 	{
-		return Internal_param_avg{
+		return AvgParam{
 			.min_histogram_value = params.min_luminance,
 			.log_min_histogram_value = glm::log2(params.min_luminance),
 			.dynamic_range = glm::log2(params.max_luminance) - glm::log2(params.min_luminance),

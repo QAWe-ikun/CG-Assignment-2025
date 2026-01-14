@@ -69,7 +69,7 @@ namespace logic
 		return {glm::cos(pitch) * glm::sin(azimuth), glm::sin(pitch), glm::cos(pitch) * glm::cos(azimuth)};
 	}
 
-	double Time_controller::update() noexcept
+	double TimeController::update() noexcept
 	{
 		const double dt = ImGui::GetIO().DeltaTime;
 
@@ -82,7 +82,7 @@ namespace logic
 		return time_of_day;
 	}
 
-	void Time_controller::settings_panel() noexcept
+	void TimeController::settings_panel() noexcept
 	{
 		if (settings_panel_opened)
 			ui::capsule::window(
@@ -123,7 +123,7 @@ namespace logic
 			);
 	}
 
-	void Time_controller::control_ui() noexcept
+	void TimeController::control_ui() noexcept
 	{
 		if (!ImGui::GetIO().WantCaptureKeyboard && ImGui::IsKeyPressed(ImGuiKey_Space))
 			time_flowing = !time_flowing;
@@ -166,8 +166,8 @@ namespace logic
 		settings_panel();
 	}
 
-	std::tuple<render::Primary_light_params, render::Ambient_params>
-	Time_controller::get_sun_params() const noexcept
+	std::tuple<render::PrimaryLightParams, render::AmbientParams>
+	TimeController::get_sun_params() const noexcept
 	{
 		const auto time_in_hours = static_cast<float>(time_of_day / 3600.0);
 
@@ -185,12 +185,12 @@ namespace logic
 		const float ambient_intensity =
 			glm::clamp(std::sin((time_in_hours - 6.0f) / 24.0f * glm::two_pi<float>()), 0.0f, 1.0f);
 
-		const render::Primary_light_params primary_light{
+		const render::PrimaryLightParams primary_light{
 			.direction = sun_dir,
 			.intensity = sun_color * (sun_horizonal_brightness_mult * max_brightness),
 		};
 
-		const render::Ambient_params ambient{
+		const render::AmbientParams ambient{
 			.intensity = glm::vec3(ambient_intensity * day_ambient_intensity),
 		};
 

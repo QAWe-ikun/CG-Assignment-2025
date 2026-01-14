@@ -10,7 +10,7 @@
 
 namespace render::pipeline
 {
-	class Ambient_light
+	class AmbientLight
 	{
 	  public:
 
@@ -20,11 +20,11 @@ namespace render::pipeline
 			float ao_strength;
 		};
 
-		static std::expected<Ambient_light, util::Error> create(SDL_GPUDevice* device) noexcept;
+		static std::expected<AmbientLight, util::Error> create(SDL_GPUDevice* device) noexcept;
 
 		void render(
-			const gpu::Command_buffer& command_buffer,
-			const gpu::Render_pass& render_pass,
+			const gpu::CommandBuffer& command_buffer,
+			const gpu::RenderPass& render_pass,
 			const target::Gbuffer& gbuffer,
 			const target::AO& ao,
 			const Param& param
@@ -32,25 +32,25 @@ namespace render::pipeline
 
 	  private:
 
-		graphics::Fullscreen_pass<false> fullscreen_pass;
+		graphics::FullscreenPass<false> FullscreenPass;
 		gpu::Sampler sampler_nearest;
 		gpu::Sampler sampler_linear;
 
-		Ambient_light(
-			graphics::Fullscreen_pass<false> fullscreen_pass,
+		AmbientLight(
+			graphics::FullscreenPass<false> FullscreenPass,
 			gpu::Sampler sampler_nearest,
 			gpu::Sampler sampler_linear
 		) noexcept :
-			fullscreen_pass(std::move(fullscreen_pass)),
+			FullscreenPass(std::move(FullscreenPass)),
 			sampler_nearest(std::move(sampler_nearest)),
 			sampler_linear(std::move(sampler_linear))
 		{}
 
 	  public:
 
-		Ambient_light(const Ambient_light&) = delete;
-		Ambient_light(Ambient_light&&) = default;
-		Ambient_light& operator=(const Ambient_light&) = delete;
-		Ambient_light& operator=(Ambient_light&&) = default;
+		AmbientLight(const AmbientLight&) = delete;
+		AmbientLight(AmbientLight&&) = default;
+		AmbientLight& operator=(const AmbientLight&) = delete;
+		AmbientLight& operator=(AmbientLight&&) = default;
 	};
 }

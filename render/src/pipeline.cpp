@@ -3,7 +3,7 @@
 
 namespace render
 {
-	std::expected<Pipeline, util::Error> Pipeline::create(const backend::SDL_context& context) noexcept
+	std::expected<Pipeline, util::Error> Pipeline::create(const backend::SDLcontext& context) noexcept
 	{
 		auto aa_module = pipeline::Antialias::create(context.device, context.get_swapchain_texture_format());
 		if (!aa_module) return aa_module.error().forward("Create antialias module failed");
@@ -12,7 +12,7 @@ namespace render
 		if (!directional_light_pipeline)
 			return directional_light_pipeline.error().forward("Create directional light pipeline failed");
 
-		auto ambient_light_pipeline = pipeline::Ambient_light::create(context.device);
+		auto ambient_light_pipeline = pipeline::AmbientLight::create(context.device);
 		if (!ambient_light_pipeline)
 			return ambient_light_pipeline.error().forward("Create environment light pipeline failed");
 
@@ -24,23 +24,23 @@ namespace render
 		auto ao_pipeline = pipeline::AO::create(context.device);
 		if (!ao_pipeline) return ao_pipeline.error().forward("Create AO pipeline failed");
 
-		auto sky_pipeline = pipeline::Sky_preetham::create(context.device);
+		auto sky_pipeline = pipeline::SkyPreetham::create(context.device);
 		if (!sky_pipeline) return sky_pipeline.error().forward("Create sky pipeline failed");
 
-		auto auto_exposure_pipeline = pipeline::Auto_exposure::create(context.device);
+		auto auto_exposure_pipeline = pipeline::AutoExposure::create(context.device);
 		if (!auto_exposure_pipeline)
 			return auto_exposure_pipeline.error().forward("Create auto exposure pipeline failed");
 
 		auto bloom_pipeline = pipeline::Bloom::create(context.device);
 		if (!bloom_pipeline) return bloom_pipeline.error().forward("Create bloom pipeline failed");
 
-		auto gbuffer_gltf = pipeline::Gbuffer_gltf::create(context.device);
+		auto gbuffer_gltf = pipeline::GbufferGLTF::create(context.device);
 		if (!gbuffer_gltf) return gbuffer_gltf.error().forward("Create Gbuffer Gltf pipeline failed");
 
-		auto shadow_gltf = pipeline::Shadow_gltf::create(context.device);
+		auto shadow_gltf = pipeline::ShadowGLTF::create(context.device);
 		if (!shadow_gltf) return shadow_gltf.error().forward("Create Shadow Gltf pipeline failed");
 
-		auto hiz_pipeline = pipeline::Hiz_generator::create(context.device);
+		auto hiz_pipeline = pipeline::HizGenerator::create(context.device);
 		if (!hiz_pipeline) return hiz_pipeline.error().forward("Create HiZ pipeline failed");
 
 		auto ssgi_pipeline = pipeline::SSGI::create(context.device);
@@ -51,7 +51,7 @@ namespace render
 			return point_light_pipeline.error().forward("Create Point Light pipeline failed");
 
 		auto depth_to_color_copier =
-			graphics::Renderpass_copy::create(context.device, 1, target::Gbuffer::depth_value_format);
+			graphics::RenderpassCopy::create(context.device, 1, target::Gbuffer::depth_value_format);
 		if (!depth_to_color_copier)
 			return depth_to_color_copier.error().forward("Create depth to color copier failed");
 

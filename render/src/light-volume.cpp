@@ -10,7 +10,7 @@
 
 namespace render
 {
-	std::expected<Light_volume, util::Error> Light_volume::from_model(
+	std::expected<LightVolume, util::Error> LightVolume::from_model(
 		SDL_GPUDevice* device,
 		const wavefront::Object& object,
 		const std::string& name
@@ -46,7 +46,7 @@ namespace render
 			  })
 			| std::ranges::to<std::vector>();
 
-		return Light_volume{
+		return LightVolume{
 			.vertex_buffer = std::move(*vertex_buffer),
 			.vertex_count = static_cast<uint32_t>(position_data.size()),
 			.min = min,
@@ -56,7 +56,7 @@ namespace render
 		};
 	}
 
-	bool Light_volume::camera_inside(glm::vec3 local_eye_position) const noexcept
+	bool LightVolume::camera_inside(glm::vec3 local_eye_position) const noexcept
 	{
 		if (glm::any(glm::lessThan(local_eye_position, min))
 			|| glm::any(glm::greaterThan(local_eye_position, max)))

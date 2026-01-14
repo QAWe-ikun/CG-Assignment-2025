@@ -25,7 +25,7 @@ namespace render::pipeline
 		const auto blur_shader_code = shader_asset::bloom_blur_comp;
 		const auto filter_shader_code = shader_asset::bloom_filter_comp;
 
-		const auto add_pipeline_config = gpu::Compute_pipeline::Create_info{
+		const auto add_pipeline_config = gpu::ComputePipeline::CreateInfo{
 			.shader_data = add_shader_code,
 			.num_samplers = 2,
 			.num_readonly_storage_textures = 0,
@@ -38,7 +38,7 @@ namespace render::pipeline
 			.threadcount_z = 1
 		};
 
-		const auto blur_pipeline_config = gpu::Compute_pipeline::Create_info{
+		const auto blur_pipeline_config = gpu::ComputePipeline::CreateInfo{
 			.shader_data = blur_shader_code,
 			.num_samplers = 1,
 			.num_readonly_storage_textures = 0,
@@ -51,7 +51,7 @@ namespace render::pipeline
 			.threadcount_z = 1
 		};
 
-		const auto filter_pipeline_config = gpu::Compute_pipeline::Create_info{
+		const auto filter_pipeline_config = gpu::ComputePipeline::CreateInfo{
 			.shader_data = filter_shader_code,
 			.num_samplers = 0,
 			.num_readonly_storage_textures = 1,
@@ -64,22 +64,22 @@ namespace render::pipeline
 			.threadcount_z = 1
 		};
 
-		const auto sampler_create_config = gpu::Sampler::Create_info{
+		const auto sampler_create_config = gpu::Sampler::CreateInfo{
 			.min_filter = gpu::Sampler::Filter::Linear,
 			.mag_filter = gpu::Sampler::Filter::Linear,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
-			.address_mode_u = gpu::Sampler::Address_mode::Clamp_to_edge,
-			.address_mode_v = gpu::Sampler::Address_mode::Clamp_to_edge,
-			.address_mode_w = gpu::Sampler::Address_mode::Clamp_to_edge,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
+			.address_mode_u = gpu::Sampler::AddressMode::Clamp_to_edge,
+			.address_mode_v = gpu::Sampler::AddressMode::Clamp_to_edge,
+			.address_mode_w = gpu::Sampler::AddressMode::Clamp_to_edge,
 			.min_lod = 0,
 			.max_lod = 0
 		};
 
 		auto filter_pipeline =
-			gpu::Compute_pipeline::create(device, filter_pipeline_config, "Bloom filter pipeline");
+			gpu::ComputePipeline::create(device, filter_pipeline_config, "Bloom filter pipeline");
 		auto blur_pipeline =
-			gpu::Compute_pipeline::create(device, blur_pipeline_config, "Bloom blur pipeline");
-		auto add_pipeline = gpu::Compute_pipeline::create(device, add_pipeline_config, "Bloom add pipeline");
+			gpu::ComputePipeline::create(device, blur_pipeline_config, "Bloom blur pipeline");
+		auto add_pipeline = gpu::ComputePipeline::create(device, add_pipeline_config, "Bloom add pipeline");
 		auto linear_sampler = gpu::Sampler::create(device, sampler_create_config);
 
 		if (!filter_pipeline) return filter_pipeline.error().forward("Create bloom filter pipeline failed");
@@ -96,10 +96,10 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> Bloom::render(
-		const gpu::Command_buffer& command_buffer,
-		const target::Light_buffer& light_buffer_target,
+		const gpu::CommandBuffer& command_buffer,
+		const target::LightBuffer& light_buffer_target,
 		const target::Bloom& bloom_target,
-		const target::Auto_exposure& auto_exposure_target,
+		const target::AutoExposure& auto_exposure_target,
 		const Param& param,
 		glm::u32vec2 swapchain_size
 	) const noexcept
@@ -153,7 +153,7 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> Bloom::run_filter_pass(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		SDL_GPUTexture* input_texture,
 		SDL_GPUTexture* output_texture,
 		SDL_GPUBuffer* exposure_buffer,
@@ -178,7 +178,7 @@ namespace render::pipeline
 		return command_buffer.run_compute_pass(
 			std::to_array({output_binding}),
 			{},
-			[this, input_texture, exposure_buffer, workgroup_count](const gpu::Compute_pass& pass) {
+			[this, input_texture, exposure_buffer, workgroup_count](const gpu::ComputePass& pass) {
 				pass.bind_pipeline(filter);
 				pass.bind_storage_textures(0, input_texture);
 				pass.bind_storage_buffers(0, exposure_buffer);
@@ -188,7 +188,7 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> Bloom::run_blur_pass(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Bloom& bloom_target,
 		uint32_t upsample_mip_level,
 		glm::u32vec2 swapchain_size
@@ -214,7 +214,7 @@ namespace render::pipeline
 		return command_buffer.run_compute_pass(
 			std::to_array({output_binding}),
 			{},
-			[this, workgroup_count, input_binding](const gpu::Compute_pass& pass) {
+			[this, workgroup_count, input_binding](const gpu::ComputePass& pass) {
 				pass.bind_pipeline(blur);
 				pass.bind_samplers(0, input_binding);
 				pass.dispatch(workgroup_count.x, workgroup_count.y, 1);
@@ -223,7 +223,7 @@ namespace render::pipeline
 	}
 
 	void Bloom::run_blit(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Bloom& bloom_target,
 		uint32_t upsample_mip_level,
 		glm::u32vec2 swapchain_size
@@ -269,7 +269,7 @@ namespace render::pipeline
 	}
 
 	void Bloom::run_initial_blit(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Bloom& bloom_target,
 		glm::u32vec2 swapchain_size
 	) const noexcept
@@ -314,7 +314,7 @@ namespace render::pipeline
 	}
 
 	std::expected<void, util::Error> Bloom::run_add_pass(
-		const gpu::Command_buffer& command_buffer,
+		const gpu::CommandBuffer& command_buffer,
 		const target::Bloom& bloom_target,
 		uint32_t upsample_mip_level,
 		const Param& param,
@@ -324,7 +324,7 @@ namespace render::pipeline
 		const auto upsample_dst_size = calculate_mip_size(swapchain_size, upsample_mip_level + 1);
 		const bool is_last_mip = (upsample_mip_level + 1) == target::Bloom::upsample_mip_count;
 
-		const Add_param add_param(param);
+		const AddParam add_param(param);
 		command_buffer.push_uniform_to_compute(0, util::as_bytes(add_param));
 
 		const auto prev_upsample_binding =
@@ -351,7 +351,7 @@ namespace render::pipeline
 			std::to_array({cur_upsample_binding}),
 			{},
 			[this, workgroup_count, prev_upsample_binding, cur_downsample_binding](
-				const gpu::Compute_pass& pass
+				const gpu::ComputePass& pass
 			) {
 				pass.bind_pipeline(blur_and_add);
 				pass.bind_samplers(0, prev_upsample_binding, cur_downsample_binding);

@@ -19,7 +19,7 @@ namespace render::target
 			.usage = {.sampler = true, .color_target = true}
 		};
 
-		graphics::Auto_texture composite_texture{composite_format, "Composite Texture"};  // Composite Texture
+		graphics::AutoTexture composite_texture{composite_format, "Composite Texture"};  // Composite Texture
 
 		// Resize all textures
 		std::expected<void, util::Error> resize(SDL_GPUDevice* device, glm::u32vec2 size) noexcept;

@@ -6,15 +6,15 @@
 
 namespace render::pipeline
 {
-	std::expected<Debug_pipeline, util::Error> Debug_pipeline::create(
+	std::expected<DebugPipeline, util::Error> DebugPipeline::create(
 		SDL_GPUDevice* device,
 		gpu::Texture::Format format
 	) noexcept
 	{
-		auto shader = gpu::Graphics_shader::create(
+		auto shader = gpu::GraphicsShader::create(
 			device,
 			shader_asset::debug_single_frag,
-			gpu::Graphics_shader::Stage::Fragment,
+			gpu::GraphicsShader::Stage::Fragment,
 			1,
 			0,
 			0,
@@ -22,25 +22,25 @@ namespace render::pipeline
 		);
 		if (!shader) return shader.error().forward("Create debug shader failed");
 
-		auto fullscreen_pass =
-			graphics::Fullscreen_pass<false>::create(device, *shader, format, "Debug Pipeline");
-		if (!fullscreen_pass) return fullscreen_pass.error().forward("Create fullscreen pass failed");
+		auto FullscreenPass =
+			graphics::FullscreenPass<false>::create(device, *shader, format, "Debug Pipeline");
+		if (!FullscreenPass) return FullscreenPass.error().forward("Create fullscreen pass failed");
 
-		const gpu::Sampler::Create_info sampler_create_info{
+		const gpu::Sampler::CreateInfo sampler_create_info{
 			.min_filter = gpu::Sampler::Filter::Nearest,
 			.mag_filter = gpu::Sampler::Filter::Nearest,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
 			.max_lod = 0.0f
 		};
 		auto sampler = gpu::Sampler::create(device, sampler_create_info);
 		if (!sampler) return sampler.error().forward("Create sampler failed");
 
-		return Debug_pipeline(std::move(*fullscreen_pass), std::move(*sampler));
+		return DebugPipeline(std::move(*FullscreenPass), std::move(*sampler));
 	}
 
-	void Debug_pipeline::render_channels(
-		const gpu::Command_buffer& command_buffer [[maybe_unused]],
-		const gpu::Render_pass& render_pass,
+	void DebugPipeline::render_channels(
+		const gpu::CommandBuffer& command_buffer [[maybe_unused]],
+		const gpu::RenderPass& render_pass,
 		SDL_GPUTexture* input_texture,
 		glm::u32vec2 size [[maybe_unused]],
 		uint8_t channel_count
@@ -53,6 +53,6 @@ namespace render::pipeline
 
 		const auto bind = SDL_GPUTextureSamplerBinding{.texture = input_texture, .sampler = sampler};
 		const std::array bindings = {bind};
-		fullscreen_pass.render_to_renderpass(render_pass, bindings, {}, {});
+		FullscreenPass.render_to_renderpass(render_pass, bindings, {}, {});
 	}
 }

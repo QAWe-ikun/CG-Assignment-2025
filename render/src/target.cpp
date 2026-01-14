@@ -4,7 +4,7 @@ namespace render
 {
 	std::expected<Target, util::Error> Target::create(SDL_GPUDevice* device) noexcept
 	{
-		auto auto_exposure_target = target::Auto_exposure::create(device);
+		auto auto_exposure_target = target::AutoExposure::create(device);
 		if (!auto_exposure_target)
 			return auto_exposure_target.error().forward("Create auto exposure target failed");
 

@@ -11,7 +11,7 @@ namespace render::pipeline
 	/// @brief Preetham sky model
 	/// @note Algorithm adapted from https://github.com/diharaw/SkyModels
 	///
-	class Sky_preetham
+	class SkyPreetham
 	{
 	  public:
 
@@ -25,17 +25,17 @@ namespace render::pipeline
 			float turbidity;
 		};
 
-		static std::expected<Sky_preetham, util::Error> create(SDL_GPUDevice* device) noexcept;
+		static std::expected<SkyPreetham, util::Error> create(SDL_GPUDevice* device) noexcept;
 
 		void render(
-			const gpu::Command_buffer& command_buffer,
-			const gpu::Render_pass& render_pass,
+			const gpu::CommandBuffer& command_buffer,
+			const gpu::RenderPass& render_pass,
 			const Params& params
 		) const noexcept;
 
 	  private:
 
-		struct alignas(16) Preetham_params
+		struct alignas(16) PreethamParam
 		{
 			alignas(16) glm::vec3 A;
 			alignas(16) glm::vec3 B;
@@ -44,10 +44,10 @@ namespace render::pipeline
 			alignas(16) glm::vec3 E;
 			alignas(16) glm::vec3 Z;
 
-			Preetham_params(float turbidity, glm::vec3 sun_direction) noexcept;
+			PreethamParam(float turbidity, glm::vec3 sun_direction) noexcept;
 		};
 
-		struct Internal_params
+		struct InternalParam
 		{
 			glm::mat4 camera_mat_inv;
 			glm::vec2 screen_size;
@@ -56,24 +56,24 @@ namespace render::pipeline
 			alignas(16) glm::vec3 sun_intensity;
 			float intensity;
 
-			Preetham_params preetham;
+			PreethamParam preetham;
 
-			Internal_params(const Params& params) noexcept;
+			InternalParam(const Params& params) noexcept;
 		};
 
 		gpu::Sampler sampler;
-		graphics::Fullscreen_pass<false> fullscreen_pass;
+		graphics::FullscreenPass<false> FullscreenPass;
 
-		Sky_preetham(gpu::Sampler sampler, graphics::Fullscreen_pass<false> fullscreen_pass) noexcept :
+		SkyPreetham(gpu::Sampler sampler, graphics::FullscreenPass<false> FullscreenPass) noexcept :
 			sampler(std::move(sampler)),
-			fullscreen_pass(std::move(fullscreen_pass))
+			FullscreenPass(std::move(FullscreenPass))
 		{}
 
 	  public:
 
-		Sky_preetham(const Sky_preetham&) = delete;
-		Sky_preetham(Sky_preetham&&) = default;
-		Sky_preetham& operator=(const Sky_preetham&) = delete;
-		Sky_preetham& operator=(Sky_preetham&&) = default;
+		SkyPreetham(const SkyPreetham&) = delete;
+		SkyPreetham(SkyPreetham&&) = default;
+		SkyPreetham& operator=(const SkyPreetham&) = delete;
+		SkyPreetham& operator=(SkyPreetham&&) = default;
 	};
 }

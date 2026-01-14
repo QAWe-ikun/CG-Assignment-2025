@@ -27,8 +27,8 @@ namespace render::pipeline
 		static std::expected<AO, util::Error> create(SDL_GPUDevice* device) noexcept;
 
 		void render(
-			const gpu::Command_buffer& command_buffer,
-			const gpu::Render_pass& render_pass,
+			const gpu::CommandBuffer& command_buffer,
+			const gpu::RenderPass& render_pass,
 			const target::AO& ao_target,
 			const target::Gbuffer& gbuffer,
 			const Params& params
@@ -36,7 +36,7 @@ namespace render::pipeline
 
 	  private:
 
-		struct Uniform_params
+		struct UniformParams
 		{
 			alignas(64) glm::mat4 camera_mat_inv;
 			alignas(64) glm::mat4 view_mat;
@@ -46,19 +46,19 @@ namespace render::pipeline
 			alignas(4) float radius;
 			alignas(4) float blend_alpha;
 
-			static Uniform_params from(const Params& params) noexcept;
+			static UniformParams from(const Params& params) noexcept;
 		};
 
 		gpu::Sampler sampler_linear;
 		gpu::Sampler sampler_nearest;
-		graphics::Fullscreen_pass<false> fullscreen_pass;
+		graphics::FullscreenPass<false> FullscreenPass;
 
 		AO(gpu::Sampler sampler_linear,
 		   gpu::Sampler sampler_nearest,
-		   graphics::Fullscreen_pass<false> fullscreen_pass) noexcept :
+		   graphics::FullscreenPass<false> FullscreenPass) noexcept :
 			sampler_linear(std::move(sampler_linear)),
 			sampler_nearest(std::move(sampler_nearest)),
-			fullscreen_pass(std::move(fullscreen_pass))
+			FullscreenPass(std::move(FullscreenPass))
 		{}
 
 	  public:

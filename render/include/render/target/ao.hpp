@@ -15,7 +15,7 @@ namespace render::target
 			.usage = {.sampler = true, .color_target = true}
 		};
 
-		graphics::Cycle_texture halfres_ao_texture{ao_format, "AO Texture"};  // Ambient Occlusion Texture
+		graphics::CycleTexture halfres_ao_texture{ao_format, "AO Texture"};  // Ambient Occlusion Texture
 
 		// Resize all textures
 		std::expected<void, util::Error> cycle(SDL_GPUDevice* device, glm::u32vec2 size) noexcept;

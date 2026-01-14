@@ -8,7 +8,7 @@
 
 namespace logic
 {
-	render::Camera_matrices Camera::update(const graphics::camera::view::Flying& camera) noexcept
+	render::CameraMatrices Camera::update(const graphics::camera::view::Flying& camera) noexcept
 	{
 		const auto [width, height] = ImGui::GetIO().DisplaySize;
 		const auto aspect_ratio = width / height;
@@ -27,7 +27,7 @@ namespace logic
 		const auto prev_matrix = prev_frame_camera_matrix.value_or(camera_matrix);
 		prev_frame_camera_matrix = camera_matrix;
 
-		return render::Camera_matrices{
+		return render::CameraMatrices{
 			.view_matrix = view_matrix,
 			.proj_matrix = proj_matrix,
 			.prev_view_proj_matrix = prev_matrix,
@@ -35,8 +35,8 @@ namespace logic
 		};
 	}
 
-	graphics::camera::view::Flying Free_camera::update(
-		const backend::SDL_context& context,
+	graphics::camera::view::Flying FreeCamera::update(
+		const backend::SDLcontext& context,
 		bool free_cam
 	) noexcept
 	{

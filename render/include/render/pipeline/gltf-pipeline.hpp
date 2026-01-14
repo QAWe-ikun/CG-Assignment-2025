@@ -12,11 +12,11 @@ namespace render::pipeline
 	/// @brief Interface for Gbuffer glTF pipelines
 	///
 	///
-	class Gltf_pipeline
+	class PipelineGLTF
 	{
 	  public:
 
-		virtual ~Gltf_pipeline() = default;
+		virtual ~PipelineGLTF() = default;
 
 		///
 		/// @brief Bind the pipeline to the command buffer and render pass
@@ -26,8 +26,8 @@ namespace render::pipeline
 		/// @param camera_matrix Camera matrix
 		///
 		virtual void bind(
-			const gpu::Command_buffer& command_buffer,
-			const gpu::Render_pass& render_pass,
+			const gpu::CommandBuffer& command_buffer,
+			const gpu::RenderPass& render_pass,
 			const glm::mat4& camera_matrix
 		) const noexcept = 0;
 
@@ -39,9 +39,9 @@ namespace render::pipeline
 		/// @param material glTF Material
 		///
 		virtual void set_material(
-			const gpu::Command_buffer& command_buffer,
-			const gpu::Render_pass& render_pass,
-			const gltf::Material_gpu& material
+			const gpu::CommandBuffer& command_buffer,
+			const gpu::RenderPass& render_pass,
+			const gltf::MaterialGPU& material
 		) const noexcept = 0;
 
 		///
@@ -51,8 +51,8 @@ namespace render::pipeline
 		/// @param skinning_resource Skinning resource
 		///
 		virtual void set_skin(
-			const gpu::Render_pass& render_pass,
-			const gltf::Deferred_skinning_resource& skinning_resource
+			const gpu::RenderPass& render_pass,
+			const gltf::DeferredSkinningResource& skinning_resource
 		) const noexcept = 0;
 
 		///
@@ -63,9 +63,9 @@ namespace render::pipeline
 		/// @param drawcall Primitive drawcall
 		///
 		virtual void draw(
-			const gpu::Command_buffer& command_buffer,
-			const gpu::Render_pass& render_pass,
-			const gltf::Primitive_drawcall& drawcall
+			const gpu::CommandBuffer& command_buffer,
+			const gpu::RenderPass& render_pass,
+			const gltf::PrimitiveDrawcall& drawcall
 		) const noexcept = 0;
 	};
 }

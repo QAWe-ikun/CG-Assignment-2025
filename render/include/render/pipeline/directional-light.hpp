@@ -27,8 +27,8 @@ namespace render::pipeline
 		static std::expected<Directional_light, util::Error> create(SDL_GPUDevice* device) noexcept;
 
 		void render(
-			const gpu::Command_buffer& command_buffer,
-			const gpu::Render_pass& render_pass,
+			const gpu::CommandBuffer& command_buffer,
+			const gpu::RenderPass& render_pass,
 			const target::Gbuffer& gbuffer,
 			const target::Shadow& shadow,
 			const Params& params
@@ -36,16 +36,16 @@ namespace render::pipeline
 
 	  private:
 
-		graphics::Fullscreen_pass<false> fullscreen_pass;
+		graphics::FullscreenPass<false> FullscreenPass;
 		gpu::Sampler sampler;
 		gpu::Sampler shadow_sampler;
 
 		Directional_light(
-			graphics::Fullscreen_pass<false> fullscreen_pass,
+			graphics::FullscreenPass<false> FullscreenPass,
 			gpu::Sampler sampler,
 			gpu::Sampler shadow_sampler
 		) noexcept :
-			fullscreen_pass(std::move(fullscreen_pass)),
+			FullscreenPass(std::move(FullscreenPass)),
 			sampler(std::move(sampler)),
 			shadow_sampler(std::move(shadow_sampler))
 		{}

@@ -9,14 +9,14 @@
 
 namespace render::pipeline
 {
-	class Hiz_generator
+	class HizGenerator
 	{
 	  public:
 
-		static std::expected<Hiz_generator, util::Error> create(SDL_GPUDevice* device) noexcept;
+		static std::expected<HizGenerator, util::Error> create(SDL_GPUDevice* device) noexcept;
 
 		std::expected<void, util::Error> generate(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Gbuffer& gbuffer,
 			glm::u32vec2 hiz_top_size
 		) const noexcept;
@@ -29,17 +29,17 @@ namespace render::pipeline
 			glm::i32vec2 dst_size;
 		};
 
-		gpu::Compute_pipeline pipeline;
+		gpu::ComputePipeline pipeline;
 
-		Hiz_generator(gpu::Compute_pipeline pipeline) :
+		HizGenerator(gpu::ComputePipeline pipeline) :
 			pipeline(std::move(pipeline))
 		{}
 
 	  public:
 
-		Hiz_generator(const Hiz_generator&) = delete;
-		Hiz_generator(Hiz_generator&&) = default;
-		Hiz_generator& operator=(const Hiz_generator&) = delete;
-		Hiz_generator& operator=(Hiz_generator&&) = default;
+		HizGenerator(const HizGenerator&) = delete;
+		HizGenerator(HizGenerator&&) = default;
+		HizGenerator& operator=(const HizGenerator&) = delete;
+		HizGenerator& operator=(HizGenerator&&) = default;
 	};
 }

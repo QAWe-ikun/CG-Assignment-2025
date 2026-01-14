@@ -6,7 +6,7 @@
 
 namespace render
 {
-	struct Light_volume
+	struct LightVolume
 	{
 		gpu::Buffer vertex_buffer;
 		uint32_t vertex_count;
@@ -16,7 +16,7 @@ namespace render
 		std::vector<glm::vec3> tri_positions;
 		std::vector<glm::vec3> tri_normals;
 
-		static std::expected<Light_volume, util::Error> from_model(
+		static std::expected<LightVolume, util::Error> from_model(
 			SDL_GPUDevice* device,
 			const wavefront::Object& object,
 			const std::string& name

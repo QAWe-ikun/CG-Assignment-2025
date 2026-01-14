@@ -12,30 +12,30 @@
 
 namespace render::pipeline
 {
-	std::expected<Ambient_light, util::Error> Ambient_light::create(SDL_GPUDevice* device) noexcept
+	std::expected<AmbientLight, util::Error> AmbientLight::create(SDL_GPUDevice* device) noexcept
 	{
-		const gpu::Sampler::Create_info sampler_nearest_create_info{
+		const gpu::Sampler::CreateInfo sampler_nearest_create_info{
 			.min_filter = gpu::Sampler::Filter::Nearest,
 			.mag_filter = gpu::Sampler::Filter::Nearest,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
 			.max_lod = 0.0f
 		};
 		auto sampler_nearest = gpu::Sampler::create(device, sampler_nearest_create_info);
 		if (!sampler_nearest) return sampler_nearest.error().forward("Create sampler failed");
 
-		const gpu::Sampler::Create_info sampler_linear_create_info{
+		const gpu::Sampler::CreateInfo sampler_linear_create_info{
 			.min_filter = gpu::Sampler::Filter::Linear,
 			.mag_filter = gpu::Sampler::Filter::Linear,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Linear,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Linear,
 			.max_lod = 0.0f
 		};
 		auto sampler_linear = gpu::Sampler::create(device, sampler_linear_create_info);
 		if (!sampler_linear) return sampler_linear.error().forward("Create sampler failed");
 
-		auto shader = gpu::Graphics_shader::create(
+		auto shader = gpu::GraphicsShader::create(
 			device,
 			shader_asset::ambient_light_frag,
-			gpu::Graphics_shader::Stage::Fragment,
+			gpu::GraphicsShader::Stage::Fragment,
 			3,
 			0,
 			0,
@@ -43,13 +43,13 @@ namespace render::pipeline
 		);
 		if (!shader) return shader.error().forward("Create environment light shader failed");
 
-		auto fullscreen_pass = graphics::Fullscreen_pass<false>::create(
+		auto FullscreenPass = graphics::FullscreenPass<false>::create(
 			device,
 			*shader,
-			target::Light_buffer::light_buffer_format,
+			target::LightBuffer::light_buffer_format,
 			"Ambient Light Pipeline",
-			graphics::Fullscreen_blend_mode::Add,
-			graphics::Fullscreen_stencil_state{
+			graphics::FullscreenBlendMode::Add,
+			graphics::FullscreenStencilState{
 				.depth_format = target::Gbuffer::depth_format.format,
 				.enable_stencil_test = true,
 				.compare_mask = 0xFF,
@@ -58,18 +58,18 @@ namespace render::pipeline
 				.reference = 0x01
 			}
 		);
-		if (!fullscreen_pass) return fullscreen_pass.error().forward("Create fullscreen pass failed");
+		if (!FullscreenPass) return FullscreenPass.error().forward("Create fullscreen pass failed");
 
-		return Ambient_light(
-			std::move(*fullscreen_pass),
+		return AmbientLight(
+			std::move(*FullscreenPass),
 			std::move(*sampler_nearest),
 			std::move(*sampler_linear)
 		);
 	}
 
-	void Ambient_light::render(
-		const gpu::Command_buffer& command_buffer,
-		const gpu::Render_pass& render_pass,
+	void AmbientLight::render(
+		const gpu::CommandBuffer& command_buffer,
+		const gpu::RenderPass& render_pass,
 		const target::Gbuffer& gbuffer,
 		const target::AO& ao,
 		const Param& param
@@ -84,7 +84,7 @@ namespace render::pipeline
 		};
 
 		command_buffer.push_debug_group("Ambient Light Pass");
-		fullscreen_pass.render_to_renderpass(render_pass, bindings, std::nullopt, std::nullopt);
+		FullscreenPass.render_to_renderpass(render_pass, bindings, std::nullopt, std::nullopt);
 		command_buffer.pop_debug_group();
 	}
 }

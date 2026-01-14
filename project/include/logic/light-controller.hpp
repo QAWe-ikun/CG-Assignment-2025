@@ -12,32 +12,32 @@
 
 namespace logic
 {
-	struct Light_source
+	struct LightSource
 	{
-		std::shared_ptr<const render::Light_volume> volume;
+		std::shared_ptr<const render::LightVolume> volume;
 		gltf::Light light;
 		uint32_t node_index;
 	};
 
-	struct Light_group
+	struct LightGroup
 	{
 		std::string display_name;
-		std::vector<Light_source> lights;
+		std::vector<LightSource> lights;
 		std::vector<uint32_t> emission_nodes;
 		bool enabled = true;
 	};
 
-	class Light_controller
+	class LightController
 	{
-		std::map<std::string, logic::Light_group> light_groups;
+		std::map<std::string, logic::LightGroup> light_groups;
 
-		Light_controller(std::map<std::string, logic::Light_group> light_groups) :
+		LightController(std::map<std::string, logic::LightGroup> light_groups) :
 			light_groups(std::move(light_groups))
 		{}
 
 	  public:
 
-		static std::expected<Light_controller, util::Error> create(
+		static std::expected<LightController, util::Error> create(
 			SDL_GPUDevice* device,
 			const gltf::Model& model
 		) noexcept;

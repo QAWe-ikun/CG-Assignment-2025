@@ -29,9 +29,9 @@ namespace render::pipeline
 		) noexcept;
 
 		std::expected<void, util::Error> render(
-			const gpu::Command_buffer& command_buffer,
-			const target::Light_buffer& light_buffer,
-			const target::Auto_exposure& auto_exposure,
+			const gpu::CommandBuffer& command_buffer,
+			const target::LightBuffer& light_buffer,
+			const target::AutoExposure& auto_exposure,
 			const target::Bloom& bloom,
 			SDL_GPUTexture* target_texture,
 			const Param& param
@@ -39,20 +39,20 @@ namespace render::pipeline
 
 	  private:
 
-		graphics::Fullscreen_pass<true> fullscreen_pass;
+		graphics::FullscreenPass<true> FullscreenPass;
 		gpu::Sampler nearest_sampler;
 		gpu::Sampler linear_sampler;
 		gpu::Texture bloom_mask_dummy;
 		gpu::Texture bloom_mask;
 
 		Tonemapping(
-			graphics::Fullscreen_pass<true> fullscreen_pass,
+			graphics::FullscreenPass<true> FullscreenPass,
 			gpu::Sampler nearest_sampler,
 			gpu::Sampler linear_sampler,
 			gpu::Texture bloom_mask_dummy,
 			gpu::Texture bloom_mask
 		) :
-			fullscreen_pass(std::move(fullscreen_pass)),
+			FullscreenPass(std::move(FullscreenPass)),
 			nearest_sampler(std::move(nearest_sampler)),
 			linear_sampler(std::move(linear_sampler)),
 			bloom_mask_dummy(std::move(bloom_mask_dummy)),

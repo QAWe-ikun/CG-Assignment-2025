@@ -9,18 +9,18 @@ namespace render::drawdata
 	{
 		struct Drawcall
 		{
-			gltf::Primitive_drawcall drawcall;
+			gltf::PrimitiveDrawcall drawcall;
 			size_t resource_set_index;
 			float max_z;
 		};
 
 		struct Resource
 		{
-			gltf::Material_cache::Ref material_cache;
-			std::shared_ptr<gltf::Deferred_skinning_resource> deferred_skinning_resource;
+			gltf::MaterialCache::Ref material_cache;
+			std::shared_ptr<gltf::DeferredSkinningResource> deferred_skinning_resource;
 		};
 
-		std::map<std::pair<gltf::Pipeline_mode, bool>, std::vector<Drawcall>> drawcalls;
+		std::map<std::pair<gltf::PipelineMode, bool>, std::vector<Drawcall>> drawcalls;
 		std::vector<Resource> resource_sets;
 
 		glm::mat4 camera_matrix;

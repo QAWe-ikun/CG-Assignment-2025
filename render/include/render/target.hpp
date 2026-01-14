@@ -15,10 +15,10 @@ namespace render
 	{
 		target::Gbuffer gbuffer_target;
 		target::Shadow shadow_target;
-		target::Light_buffer light_buffer_target;
+		target::LightBuffer light_buffer_target;
 		target::Composite composite_target;
 		target::AO ao_target;
-		target::Auto_exposure auto_exposure_target;
+		target::AutoExposure auto_exposure_target;
 		target::Bloom bloom_target;
 		target::SSGI ssgi_target;
 

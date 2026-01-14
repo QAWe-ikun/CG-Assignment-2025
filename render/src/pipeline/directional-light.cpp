@@ -8,23 +8,23 @@ namespace render::pipeline
 {
 	std::expected<Directional_light, util::Error> Directional_light::create(SDL_GPUDevice* device) noexcept
 	{
-		const gpu::Sampler::Create_info sampler_create_info{
+		const gpu::Sampler::CreateInfo sampler_create_info{
 			.min_filter = gpu::Sampler::Filter::Nearest,
 			.mag_filter = gpu::Sampler::Filter::Nearest,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
 			.max_lod = 0.0f
 		};
 
-		const gpu::Sampler::Create_info shadow_sampler_create_info{
+		const gpu::Sampler::CreateInfo shadow_sampler_create_info{
 			.min_filter = gpu::Sampler::Filter::Linear,
 			.mag_filter = gpu::Sampler::Filter::Linear,
-			.mipmap_mode = gpu::Sampler::Mipmap_mode::Nearest,
-			.address_mode_u = gpu::Sampler::Address_mode::Clamp_to_edge,
-			.address_mode_v = gpu::Sampler::Address_mode::Clamp_to_edge,
-			.address_mode_w = gpu::Sampler::Address_mode::Clamp_to_edge,
+			.mipmap_mode = gpu::Sampler::MipmapMode::Nearest,
+			.address_mode_u = gpu::Sampler::AddressMode::Clamp_to_edge,
+			.address_mode_v = gpu::Sampler::AddressMode::Clamp_to_edge,
+			.address_mode_w = gpu::Sampler::AddressMode::Clamp_to_edge,
 			.min_lod = 0.0f,
 			.max_lod = 0.0f,
-			.compare_op = gpu::Sampler::Compare_op::Greater_or_equal
+			.compare_op = gpu::Sampler::CompareOp::Greater_or_equal
 		};
 
 		auto sampler = gpu::Sampler::create(device, sampler_create_info);
@@ -33,10 +33,10 @@ namespace render::pipeline
 		auto shadow_sampler = gpu::Sampler::create(device, shadow_sampler_create_info);
 		if (!shadow_sampler) return shadow_sampler.error().forward("Create shadow sampler failed");
 
-		auto fragment_shader = gpu::Graphics_shader::create(
+		auto fragment_shader = gpu::GraphicsShader::create(
 			device,
 			shader_asset::directional_light_frag,
-			gpu::Graphics_shader::Stage::Fragment,
+			gpu::GraphicsShader::Stage::Fragment,
 			6,
 			0,
 			0,
@@ -45,13 +45,13 @@ namespace render::pipeline
 		if (!fragment_shader)
 			return fragment_shader.error().forward("Create directional light fragment shader failed");
 
-		auto fullscreen_pass = graphics::Fullscreen_pass<false>::create(
+		auto FullscreenPass = graphics::FullscreenPass<false>::create(
 			device,
 			*fragment_shader,
-			target::Light_buffer::light_buffer_format,
+			target::LightBuffer::light_buffer_format,
 			"Directional Light Pipeline",
-			graphics::Fullscreen_blend_mode::Add,
-			graphics::Fullscreen_stencil_state{
+			graphics::FullscreenBlendMode::Add,
+			graphics::FullscreenStencilState{
 				.depth_format = target::Gbuffer::depth_format.format,
 				.enable_stencil_test = true,
 				.compare_mask = 0xFF,
@@ -60,19 +60,15 @@ namespace render::pipeline
 				.reference = 0x01
 			}
 		);
-		if (!fullscreen_pass)
-			return fullscreen_pass.error().forward("Create directional light fullscreen pass failed");
+		if (!FullscreenPass)
+			return FullscreenPass.error().forward("Create directional light fullscreen pass failed");
 
-		return Directional_light(
-			std::move(*fullscreen_pass),
-			std::move(*sampler),
-			std::move(*shadow_sampler)
-		);
+		return Directional_light(std::move(*FullscreenPass), std::move(*sampler), std::move(*shadow_sampler));
 	}
 
 	void Directional_light::render(
-		const gpu::Command_buffer& command_buffer,
-		const gpu::Render_pass& render_pass,
+		const gpu::CommandBuffer& command_buffer,
+		const gpu::RenderPass& render_pass,
 		const target::Gbuffer& gbuffer,
 		const target::Shadow& shadow,
 		const Params& params
@@ -90,7 +86,7 @@ namespace render::pipeline
 		command_buffer.push_uniform_to_fragment(0, util::as_bytes(params));
 
 		command_buffer.push_debug_group("Directional Light Pass");
-		fullscreen_pass
+		FullscreenPass
 			.render_to_renderpass(render_pass, std::span(sampler_bindings), std::nullopt, std::nullopt);
 		command_buffer.pop_debug_group();
 	}

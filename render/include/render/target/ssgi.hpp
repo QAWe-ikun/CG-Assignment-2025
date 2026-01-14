@@ -56,55 +56,55 @@ namespace render::target
 			.usage = {.sampler = true, .compute_storage_read = true, .compute_storage_write = true}
 		};
 
-		graphics::Cycle_texture temporal_reservoir_texture1{
+		graphics::CycleTexture temporal_reservoir_texture1{
 			reservoir_texture1_format,
 			"SSGI Temporal Reservoir Texture 1"
 		};
 
-		graphics::Cycle_texture temporal_reservoir_texture2{
+		graphics::CycleTexture temporal_reservoir_texture2{
 			reservoir_texture2_format,
 			"SSGI Temporal Reservoir Texture 2"
 		};
 
-		graphics::Cycle_texture temporal_reservoir_texture3{
+		graphics::CycleTexture temporal_reservoir_texture3{
 			reservoir_texture3_format,
 			"SSGI Temporal Reservoir Texture 3"
 		};
 
-		graphics::Cycle_texture temporal_reservoir_texture4{
+		graphics::CycleTexture temporal_reservoir_texture4{
 			reservoir_texture4_format,
 			"SSGI Temporal Reservoir Texture 4"
 		};
 
-		graphics::Cycle_texture spatial_reservoir_texture1{
+		graphics::CycleTexture spatial_reservoir_texture1{
 			reservoir_texture1_format,
 			"SSGI Spatial Reservoir Texture 1"
 		};
 
-		graphics::Cycle_texture spatial_reservoir_texture2{
+		graphics::CycleTexture spatial_reservoir_texture2{
 			reservoir_texture2_format,
 			"SSGI Spatial Reservoir Texture 2"
 		};
 
-		graphics::Cycle_texture spatial_reservoir_texture3{
+		graphics::CycleTexture spatial_reservoir_texture3{
 			reservoir_texture3_format,
 			"SSGI Spatial Reservoir Texture 3"
 		};
 
-		graphics::Cycle_texture spatial_reservoir_texture4{
+		graphics::CycleTexture spatial_reservoir_texture4{
 			reservoir_texture4_format,
 			"SSGI Spatial Reservoir Texture 4"
 		};
 
-		graphics::Cycle_texture diffuse_texture{radiance_texture_format, "SSGI Diffuse Texture"};
-		graphics::Cycle_texture specular_texture{radiance_texture_format, "SSGI Specular Texture"};
+		graphics::CycleTexture diffuse_texture{radiance_texture_format, "SSGI Diffuse Texture"};
+		graphics::CycleTexture specular_texture{radiance_texture_format, "SSGI Specular Texture"};
 
-		graphics::Auto_texture blurred_diffuse_texture{
+		graphics::AutoTexture blurred_diffuse_texture{
 			radiance_texture_format,
 			"SSGI Blurred Diffuse Texture"
 		};
 
-		graphics::Auto_texture fullres_radiance_texture{
+		graphics::AutoTexture fullres_radiance_texture{
 			radiance_texture_format,
 			"SSGI Fullres Radiance Texture"
 		};

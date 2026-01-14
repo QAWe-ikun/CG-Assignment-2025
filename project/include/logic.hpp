@@ -18,7 +18,7 @@ class Logic
 {
   public:
 
-	struct Render_output
+	struct RenderOutput
 	{
 		render::Params params;
 		gltf::Drawdata main_drawdata;
@@ -31,7 +31,7 @@ class Logic
 	/// @param context SDL backend context
 	/// @return Logic instance or error
 	///
-	static std::expected<Logic, util::Error> create(const backend::SDL_context& context) noexcept;
+	static std::expected<Logic, util::Error> create(const backend::SDLcontext& context) noexcept;
 
 	///
 	/// @brief Execute per-frame logic and produce render output
@@ -39,7 +39,7 @@ class Logic
 	/// @param context SDL backend context
 	/// @return Render output including render params and drawdata
 	///
-	Render_output logic(const backend::SDL_context& context) noexcept;
+	RenderOutput logic(const backend::SDLcontext& context) noexcept;
 
   private:
 
@@ -51,14 +51,14 @@ class Logic
 
 	/* Controllers & States */
 
-	struct Fire_alarm
+	struct FireAlarm
 	{
 		logic::Area area;
 		double time;
 		bool active;
 	};
 
-	enum class View_mode
+	enum class ViewMode
 	{
 		Walk,
 		Free,
@@ -66,7 +66,7 @@ class Logic
 	};
 
 	logic::Camera main_camera = {};
-	logic::Free_camera free_camera = {};
+	logic::FreeCamera free_camera = {};
 
 	inline static const graphics::camera::view::Flying cross_section_camera = {
 		.position = glm::dvec3(0.0, 16.0, 0.0),
@@ -74,18 +74,18 @@ class Logic
 		.up = glm::dvec3(0.0, 0.0, -1.0)
 	};
 
-	inline static const render::Primary_light_params cross_section_light = {
+	inline static const render::PrimaryLightParams cross_section_light = {
 		.direction = {0.0, 1.0, 0.0},
 		.intensity = glm::vec3(80000.0f)
 	};
 
-	logic::Time_controller time_controller = {};
-	logic::Light_controller light_controller;
-	logic::Furniture_controller furniture_controller;
+	logic::TimeController time_controller = {};
+	logic::LightController light_controller;
+	logic::FurnitureController furniture_controller;
 	logic::Environment environment;
 
-	std::optional<Fire_alarm> fire_alarm = std::nullopt;
-	View_mode view_mode = View_mode::Walk;
+	std::optional<FireAlarm> fire_alarm = std::nullopt;
+	ViewMode view_mode = ViewMode::Walk;
 
 	///
 	/// @brief Update and produce render output
@@ -93,7 +93,7 @@ class Logic
 	/// @param context SDL backend context
 	/// @return Render output including render params and drawdata
 	///
-	Render_output update(const backend::SDL_context& context) noexcept;
+	RenderOutput update(const backend::SDLcontext& context) noexcept;
 
 	/* UI & UI States */
 
@@ -105,14 +105,14 @@ class Logic
 		Furniture_control
 	};
 
-	struct Sidebar_tab_info
+	struct SidebarTabInfo
 	{
 		const char* icon;
 		const char* hint;
 	};
 
 	std::optional<Sidebar_tab> active_sidebar_tab = std::nullopt;
-	static const std::map<Sidebar_tab, Sidebar_tab_info> sidebar_tab_icons;
+	static const std::map<Sidebar_tab, SidebarTabInfo> sidebar_tab_icons;
 
 	const std::string device_name;
 	const std::string driver_name;
@@ -125,7 +125,7 @@ class Logic
 	///
 	void render_ui(
 		std::span<const glm::mat4> node_vertices,
-		const render::Camera_matrices& camera_matrices
+		const render::CameraMatrices& camera_matrices
 	) noexcept;
 
 	///
@@ -156,8 +156,8 @@ class Logic
 
 	Logic(
 		gltf::Model model,
-		logic::Light_controller light_controller,
-		logic::Furniture_controller furniture_controller,
+		logic::LightController light_controller,
+		logic::FurnitureController furniture_controller,
 		logic::Environment environment,
 		std::string device_name,
 		std::string driver_name,

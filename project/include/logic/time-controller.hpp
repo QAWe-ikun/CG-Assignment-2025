@@ -6,16 +6,16 @@
 
 namespace logic
 {
-	class Time_controller
+	class TimeController
 	{
-		struct Time_label
+		struct TimeLabel
 		{
 			const char* icon;
 			uint8_t hour;
 			uint8_t minute;
 		};
 
-		static constexpr auto time_labels = std::to_array<Time_label>({
+		static constexpr auto time_labels = std::to_array<TimeLabel>({
 			{.icon = "\ue34c", .hour = 6,  .minute = 30}, // Sunrise, 6:30
 			{.icon = "\uf522", .hour = 12, .minute = 0 }, // Noon, 12:00
 			{.icon = "\ue34d", .hour = 17, .minute = 30}, // Sunset, 17:30
@@ -59,6 +59,6 @@ namespace logic
 		///
 		/// @return Sun light parameters
 		///
-		std::tuple<render::Primary_light_params, render::Ambient_params> get_sun_params() const noexcept;
+		std::tuple<render::PrimaryLightParams, render::AmbientParams> get_sun_params() const noexcept;
 	};
 }

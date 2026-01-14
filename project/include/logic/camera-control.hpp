@@ -20,7 +20,7 @@ namespace logic
 		/// @param camera Target camera view
 		/// @return Current camera matrices
 		///
-		render::Camera_matrices update(const graphics::camera::view::Flying& camera) noexcept;
+		render::CameraMatrices update(const graphics::camera::view::Flying& camera) noexcept;
 
 	  private:
 
@@ -33,7 +33,7 @@ namespace logic
 		static constexpr float mix_factor = 16.0f;
 	};
 
-	class Free_camera
+	class FreeCamera
 	{
 	  public:
 
@@ -44,7 +44,7 @@ namespace logic
 		/// @param free_cam Whether to enable free camera mode (false = fixed 1.5m height)
 		/// @return Current camera view
 		///
-		graphics::camera::view::Flying update(const backend::SDL_context& context, bool free_cam) noexcept;
+		graphics::camera::view::Flying update(const backend::SDLcontext& context, bool free_cam) noexcept;
 
 	  private:
 

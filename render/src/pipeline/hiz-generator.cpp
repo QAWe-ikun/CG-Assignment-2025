@@ -11,9 +11,9 @@
 
 namespace render::pipeline
 {
-	std::expected<Hiz_generator, util::Error> Hiz_generator::create(SDL_GPUDevice* device) noexcept
+	std::expected<HizGenerator, util::Error> HizGenerator::create(SDL_GPUDevice* device) noexcept
 	{
-		const gpu::Compute_pipeline::Create_info create_info{
+		const gpu::ComputePipeline::CreateInfo create_info{
 			.shader_data = shader_asset::hiz_gen_comp,
 			.num_samplers = 0,
 			.num_readonly_storage_textures = 0,
@@ -26,15 +26,15 @@ namespace render::pipeline
 			.threadcount_z = 1
 		};
 
-		auto pipeline_result = gpu::Compute_pipeline::create(device, create_info, "HiZ Generator Pipeline");
+		auto pipeline_result = gpu::ComputePipeline::create(device, create_info, "HiZ Generator Pipeline");
 		if (!pipeline_result)
 			return pipeline_result.error().forward("Create pipeline for HiZ generator failed");
 
-		return Hiz_generator(std::move(pipeline_result.value()));
+		return HizGenerator(std::move(pipeline_result.value()));
 	}
 
-	std::expected<void, util::Error> Hiz_generator::generate(
-		const gpu::Command_buffer& command_buffer,
+	std::expected<void, util::Error> HizGenerator::generate(
+		const gpu::CommandBuffer& command_buffer,
 		const target::Gbuffer& gbuffer,
 		glm::u32vec2 hiz_top_size
 	) const noexcept
@@ -78,7 +78,7 @@ namespace render::pipeline
 			const auto result = command_buffer.run_compute_pass(
 				std::to_array({src_binding, dst_binding}),
 				{},
-				[this, workgroup_count](const gpu::Compute_pass& pass) {
+				[this, workgroup_count](const gpu::ComputePass& pass) {
 					pass.bind_pipeline(this->pipeline);
 					pass.dispatch(workgroup_count.x, workgroup_count.y, 1);
 				}

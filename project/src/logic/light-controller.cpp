@@ -34,7 +34,7 @@ namespace logic
 		}
 	}
 
-	static std::expected<std::map<std::string, Light_group>, util::Error> get_groups(
+	static std::expected<std::map<std::string, LightGroup>, util::Error> get_groups(
 		const nlohmann::json& json,
 		const gltf::Model& model
 	) noexcept
@@ -42,7 +42,7 @@ namespace logic
 		try
 		{
 			if (!json.is_array()) return util::Error("JSON root is not an array");
-			std::map<std::string, Light_group> groups;
+			std::map<std::string, LightGroup> groups;
 
 			for (const auto& [key, value] : json.items())
 			{
@@ -86,7 +86,7 @@ namespace logic
 					}
 				}
 
-				auto group = Light_group{
+				auto group = LightGroup{
 					.display_name = value["display"].get<std::string>(),
 					.lights = {},
 					.emission_nodes = std::move(emission_nodes),
@@ -106,7 +106,7 @@ namespace logic
 
 	static std::expected<void, util::Error> assign_lights_to_groups(
 		SDL_GPUDevice* device,
-		std::map<std::string, Light_group>& groups,
+		std::map<std::string, LightGroup>& groups,
 		const nlohmann::json& json,
 		const gltf::Model& model
 	) noexcept
@@ -138,8 +138,8 @@ namespace logic
 					.and_then(wavefront::parse_raw)
 					.and_then(
 						[device, &node_name](const wavefront::Object& raw_model)
-							-> std::expected<render::Light_volume, util::Error> {
-							return render::Light_volume::from_model(
+							-> std::expected<render::LightVolume, util::Error> {
+							return render::LightVolume::from_model(
 								device,
 								raw_model,
 								std::format("Light volume '{}'", node_name)
@@ -151,9 +151,9 @@ namespace logic
 
 			const auto [node_index, light] = *find_light_result;
 			find_group_it->second.lights.push_back(
-				Light_source{
+				LightSource{
 					.volume =
-						std::make_shared<render::Light_volume>(std::move(*volume)),  // to be filled later
+						std::make_shared<render::LightVolume>(std::move(*volume)),  // to be filled later
 					.light = light,
 					.node_index = node_index
 				}
@@ -163,7 +163,7 @@ namespace logic
 		return {};
 	}
 
-	std::expected<Light_controller, util::Error> Light_controller::create(
+	std::expected<LightController, util::Error> LightController::create(
 		SDL_GPUDevice* device,
 		const gltf::Model& model
 	) noexcept
@@ -181,10 +181,10 @@ namespace logic
 		const auto assign_result = assign_lights_to_groups(device, groups, json["lights"], model);
 		if (!assign_result) return assign_result.error().forward("Assign lights to groups failed");
 
-		return Light_controller(std::move(groups));
+		return LightController(std::move(groups));
 	}
 
-	void Light_controller::control_ui() noexcept
+	void LightController::control_ui() noexcept
 	{
 		ui::capsule::window(
 			"##LightControl",
@@ -212,7 +212,7 @@ namespace logic
 		);
 	}
 
-	std::vector<std::pair<uint32_t, float>> Light_controller::get_emission_overrides() const noexcept
+	std::vector<std::pair<uint32_t, float>> LightController::get_emission_overrides() const noexcept
 	{
 		std::vector<std::pair<uint32_t, float>> emission_overrides;
 
@@ -226,16 +226,16 @@ namespace logic
 		return emission_overrides;
 	}
 
-	std::vector<render::drawdata::Light> Light_controller::get_light_drawdata(
+	std::vector<render::drawdata::Light> LightController::get_light_drawdata(
 		const gltf::Drawdata& drawdata
 	) const noexcept
 	{
 		return light_groups
 			| std::views::values
-			| std::views::filter(&logic::Light_group::enabled)
-			| std::views::transform(&logic::Light_group::lights)
+			| std::views::filter(&logic::LightGroup::enabled)
+			| std::views::transform(&logic::LightGroup::lights)
 			| std::views::join
-			| std::views::transform([&drawdata](const logic::Light_source& light) {
+			| std::views::transform([&drawdata](const logic::LightSource& light) {
 				   return render::drawdata::Light::from(
 					   drawdata.node_matrices[light.node_index],
 					   glm::mat4(1.0),
@@ -246,7 +246,7 @@ namespace logic
 			| std::ranges::to<std::vector>();
 	}
 
-	void Light_controller::handle_fire_event() noexcept
+	void LightController::handle_fire_event() noexcept
 	{
 		for (auto& group : light_groups | std::views::values) group.enabled = true;
 	}

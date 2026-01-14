@@ -47,10 +47,10 @@ namespace logic
 		///
 		void hud_ui(
 			std::span<const glm::mat4> node_matrices,
-			const render::Camera_matrices& camera_matrices
+			const render::CameraMatrices& camera_matrices
 		) const noexcept;
 
-		struct Update_result
+		struct UpdateResult
 		{
 			std::optional<Area> fire_alert = std::nullopt;
 			bool bad_outdoor_air = false;
@@ -62,7 +62,7 @@ namespace logic
 		/// @param sim_time Current simulation time, in seconds
 		/// @return Alerts and events
 		///
-		Update_result update(double sim_time) noexcept;
+		UpdateResult update(double sim_time) noexcept;
 
 	  private:
 

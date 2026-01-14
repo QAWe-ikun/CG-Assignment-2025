@@ -17,7 +17,7 @@
 #include <string>
 
 static std::expected<gltf::Model, util::Error> create_scene_from_model(
-	const backend::SDL_context& context
+	const backend::SDLcontext& context
 ) noexcept
 {
 	auto model_decompress_result = backend::display_until_task_done(
@@ -47,15 +47,15 @@ static std::expected<gltf::Model, util::Error> create_scene_from_model(
 	);
 	if (!gltf_load_result) return gltf_load_result.error().forward("Load tinygltf model failed");
 
-	std::atomic<gltf::Model::Load_progress> load_progress;
+	std::atomic<gltf::Model::LoadProgress> load_progress;
 
 	auto future = std::async(std::launch::async, [&context, &gltf_load_result, &load_progress]() {
 		return gltf::Model::from_tinygltf(
 			context.device,
 			*gltf_load_result,
-			gltf::Sampler_config{.anisotropy = 4.0f},
-			{.color_mode = gltf::Color_compress_mode::RGBA8_BC3,
-			 .normal_mode = gltf::Normal_compress_mode::RGn_BC5},
+			gltf::SamplerConfig{.anisotropy = 4.0f},
+			{.color_mode = gltf::ColorCompressMode::RGBA8_BC3,
+			 .normal_mode = gltf::NormalCompressMode::RGn_BC5},
 			std::ref(load_progress)
 		);
 	});
@@ -65,22 +65,22 @@ static std::expected<gltf::Model, util::Error> create_scene_from_model(
 
 		switch (current.stage)
 		{
-		case gltf::Model::Load_stage::Node:
+		case gltf::Model::LoadStage::Node:
 			ImGui::Text("解析节点树...");
 			break;
-		case gltf::Model::Load_stage::Mesh:
+		case gltf::Model::LoadStage::Mesh:
 			ImGui::Text("分析并优化网格...");
 			break;
-		case gltf::Model::Load_stage::Material:
+		case gltf::Model::LoadStage::Material:
 			ImGui::Text("压缩材质...");
 			break;
-		case gltf::Model::Load_stage::Animation:
+		case gltf::Model::LoadStage::Animation:
 			ImGui::Text("解析动画...");
 			break;
-		case gltf::Model::Load_stage::Skin:
+		case gltf::Model::LoadStage::Skin:
 			ImGui::Text("解析皮肤...");
 			break;
-		case gltf::Model::Load_stage::Postprocess:
+		case gltf::Model::LoadStage::Postprocess:
 			ImGui::Text("处理中...");
 			break;
 		}
@@ -95,15 +95,15 @@ static std::expected<gltf::Model, util::Error> create_scene_from_model(
 	return gltf_result;
 }
 
-std::expected<Logic, util::Error> Logic::create(const backend::SDL_context& context) noexcept
+std::expected<Logic, util::Error> Logic::create(const backend::SDLcontext& context) noexcept
 {
 	auto model = create_scene_from_model(context);
 	if (!model) return model.error().forward("Load 3D model failed");
 
-	auto light_controller = logic::Light_controller::create(context.device, *model);
+	auto light_controller = logic::LightController::create(context.device, *model);
 	if (!light_controller) return light_controller.error().forward("Create light controller failed");
 
-	auto furniture_controller = logic::Furniture_controller::create(*model);
+	auto furniture_controller = logic::FurnitureController::create(*model);
 	if (!furniture_controller)
 		return furniture_controller.error().forward("Create furniture controller failed");
 
@@ -135,7 +135,7 @@ std::expected<Logic, util::Error> Logic::create(const backend::SDL_context& cont
 	);
 }
 
-const std::map<Logic::Sidebar_tab, Logic::Sidebar_tab_info> Logic::sidebar_tab_icons = {
+const std::map<Logic::Sidebar_tab, Logic::SidebarTabInfo> Logic::sidebar_tab_icons = {
 	{Sidebar_tab::Light_control,     {.icon = "\U000f06e8", .hint = "灯光控制"}}, // Light bulb icon
 	{Sidebar_tab::Charts_view,       {.icon = "\uf201", .hint = "环境信息"}    }, // Chart icon
 	{Sidebar_tab::Climate_control,   {.icon = "\U000f0393", .hint = "环境控制"}}, // Thermometer icon
@@ -188,21 +188,21 @@ void Logic::sidebar_ui_camera() noexcept
 {
 	switch (view_mode)
 	{
-	case View_mode::Walk:
-		if (ui::capsule::button("\ue213 漫游视角", false)) view_mode = View_mode::Free;
+	case ViewMode::Walk:
+		if (ui::capsule::button("\ue213 漫游视角", false)) view_mode = ViewMode::Free;
 		break;
-	case View_mode::Free:
-		if (ui::capsule::button("\uf1d9 自由视角", false)) view_mode = View_mode::Cross_section;
+	case ViewMode::Free:
+		if (ui::capsule::button("\uf1d9 自由视角", false)) view_mode = ViewMode::Cross_section;
 		break;
-	case View_mode::Cross_section:
-		if (ui::capsule::button("\U000F034D 剖面视角", false)) view_mode = View_mode::Walk;
+	case ViewMode::Cross_section:
+		if (ui::capsule::button("\U000F034D 剖面视角", false)) view_mode = ViewMode::Walk;
 		break;
 	}
 }
 
 void Logic::render_ui(
 	std::span<const glm::mat4> node_vertices,
-	const render::Camera_matrices& camera_matrices
+	const render::CameraMatrices& camera_matrices
 ) noexcept
 {
 	// Bottom left sidebar
@@ -237,7 +237,7 @@ void Logic::render_ui(
 		}
 	}
 
-	if (view_mode == View_mode::Cross_section) environment.hud_ui(node_vertices, camera_matrices);
+	if (view_mode == ViewMode::Cross_section) environment.hud_ui(node_vertices, camera_matrices);
 
 	// Fire alarm UI
 	if (fire_alarm && fire_alarm->active)
@@ -290,19 +290,19 @@ void Logic::draw_debug_overlay() noexcept
 	draw_text(driver_name, {10.0f, 60.0f}, 16.0f);
 }
 
-Logic::Render_output Logic::update(const backend::SDL_context& context) noexcept
+Logic::RenderOutput Logic::update(const backend::SDLcontext& context) noexcept
 {
 	const auto camera_matrices = [&]() {
 		switch (view_mode)
 		{
-		case View_mode::Walk:
+		case ViewMode::Walk:
 			return main_camera.update(free_camera.update(context, false));
-		case View_mode::Free:
+		case ViewMode::Free:
 			return main_camera.update(free_camera.update(context, true));
-		case View_mode::Cross_section:
+		case ViewMode::Cross_section:
 			return main_camera.update(cross_section_camera);
 		}
-		return render::Camera_matrices{};
+		return render::CameraMatrices{};
 	}();
 
 	const auto sim_time = time_controller.update();
@@ -329,7 +329,7 @@ Logic::Render_output Logic::update(const backend::SDL_context& context) noexcept
 	const auto [primary_light_param, ambient_light_param] = time_controller.get_sun_params();
 
 	std::vector<uint32_t> hidden_nodes;
-	if (view_mode == View_mode::Cross_section) hidden_nodes.push_back(ceiling_node_index);
+	if (view_mode == ViewMode::Cross_section) hidden_nodes.push_back(ceiling_node_index);
 
 	auto main_drawdata =
 		model.generate_drawdata(glm::mat4(1.0f), animation_keys, emission_overrides, hidden_nodes);
@@ -338,7 +338,7 @@ Logic::Render_output Logic::update(const backend::SDL_context& context) noexcept
 
 	const render::Params params{
 		.camera = camera_matrices,
-		.primary_light = view_mode == View_mode::Cross_section ? cross_section_light : primary_light_param,
+		.primary_light = view_mode == ViewMode::Cross_section ? cross_section_light : primary_light_param,
 		.ambient = ambient_light_param
 	};
 
@@ -349,7 +349,7 @@ Logic::Render_output Logic::update(const backend::SDL_context& context) noexcept
 	};
 }
 
-Logic::Render_output Logic::logic(const backend::SDL_context& context) noexcept
+Logic::RenderOutput Logic::logic(const backend::SDLcontext& context) noexcept
 {
 	auto render_results = update(context);
 	render_ui(render_results.main_drawdata.node_matrices, render_results.params.camera);

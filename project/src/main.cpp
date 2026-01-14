@@ -13,7 +13,7 @@
 #include "render.hpp"
 #include "util/unwrap.hpp"
 
-static void main_logic(const backend::SDL_context& sdl_context)
+static void main_logic(const backend::SDLcontext& sdl_context)
 {
 	auto render_resource =
 		backend::display_until_task_done(
@@ -78,12 +78,12 @@ try
 	backend::initialize_sdl() | util::unwrap("Initialize SDL failed");
 
 	const auto sdl_context =
-		backend::SDL_context::create(
+		backend::SDLcontext::create(
 			1280,
 			720,
 			"光线追踪好房子展示程序",
 			SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED,
-			backend::Vulkan_config{
+			backend::VulkanConfig{
 				.debug_enabled = enable_debug_layer,
 			}
 		)

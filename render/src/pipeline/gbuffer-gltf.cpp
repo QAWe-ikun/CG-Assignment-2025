@@ -41,27 +41,27 @@ namespace render::pipeline
 			{.location = 0,
 			 .buffer_slot = 0,
 			 .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-			 .offset = offsetof(gltf::Rigged_vertex, position)     },
+			 .offset = offsetof(gltf::RiggedVertex, position)     },
 			{.location = 1,
 			 .buffer_slot = 0,
 			 .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-			 .offset = offsetof(gltf::Rigged_vertex, normal)       },
+			 .offset = offsetof(gltf::RiggedVertex, normal)       },
 			{.location = 2,
 			 .buffer_slot = 0,
 			 .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-			 .offset = offsetof(gltf::Rigged_vertex, tangent)      },
+			 .offset = offsetof(gltf::RiggedVertex, tangent)      },
 			{.location = 3,
 			 .buffer_slot = 0,
 			 .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-			 .offset = offsetof(gltf::Rigged_vertex, texcoord)     },
+			 .offset = offsetof(gltf::RiggedVertex, texcoord)     },
 			{.location = 4,
 			 .buffer_slot = 0,
 			 .format = SDL_GPU_VERTEXELEMENTFORMAT_UINT4,
-			 .offset = offsetof(gltf::Rigged_vertex, joint_indices)},
+			 .offset = offsetof(gltf::RiggedVertex, joint_indices)},
 			{.location = 5,
 			 .buffer_slot = 0,
 			 .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-			 .offset = offsetof(gltf::Rigged_vertex, joint_weights)},
+			 .offset = offsetof(gltf::RiggedVertex, joint_weights)},
 		});
 
 		const auto vertex_buffer_descs = std::to_array<SDL_GPUVertexBufferDescription>({
@@ -73,7 +73,7 @@ namespace render::pipeline
 
 		const auto vertex_buffer_rigged_descs = std::to_array<SDL_GPUVertexBufferDescription>({
 			{.slot = 0,
-			 .pitch = sizeof(gltf::Rigged_vertex),
+			 .pitch = sizeof(gltf::RiggedVertex),
 			 .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
 			 .instance_step_rate = 0},
 		});
@@ -135,7 +135,7 @@ namespace render::pipeline
 		};
 
 		const SDL_GPUColorTargetDescription light_buffer_target = {
-			.format = target::Light_buffer::light_buffer_format.format,
+			.format = target::LightBuffer::light_buffer_format.format,
 			.blend_state = light_buffer_blend_state
 		};
 
@@ -143,7 +143,7 @@ namespace render::pipeline
 			{albedo_color_target, lighting_info_target, light_buffer_target}
 		);
 
-		gpu::Graphics_pipeline::Depth_stencil_state get_depth_stencil_state(bool double_sided) noexcept
+		gpu::GraphicsPipeline::DepthStencilState get_depth_stencil_state(bool double_sided) noexcept
 		{
 			const auto write_stencil_state = SDL_GPUStencilOpState{
 				.fail_op = SDL_GPU_STENCILOP_KEEP,
@@ -159,7 +159,7 @@ namespace render::pipeline
 				.compare_op = SDL_GPU_COMPAREOP_ALWAYS
 			};
 
-			const auto depth_stencil_state = gpu::Graphics_pipeline::Depth_stencil_state{
+			const auto depth_stencil_state = gpu::GraphicsPipeline::DepthStencilState{
 				.format = target::Gbuffer::depth_format.format,
 				.compare_op = SDL_GPU_COMPAREOP_GREATER,
 				.back_stencil_state = double_sided ? write_stencil_state : no_write_stencil_state,
@@ -176,9 +176,7 @@ namespace render::pipeline
 
 	}
 
-	Gbuffer_gltf::Frag_param Gbuffer_gltf::Frag_param::from(
-		const gltf::Material_params::Factor& factor
-	) noexcept
+	GbufferGLTF::Frag_param GbufferGLTF::Frag_param::from(const gltf::MaterialParams::Factor& factor) noexcept
 	{
 		return Frag_param{
 			.base_color_factor = factor.base_color_mult,
@@ -191,14 +189,14 @@ namespace render::pipeline
 		};
 	}
 
-	static std::expected<gpu::Graphics_shader, util::Error> create_vertex_shader(
+	static std::expected<gpu::GraphicsShader, util::Error> create_vertex_shader(
 		SDL_GPUDevice* device
 	) noexcept
 	{
-		return gpu::Graphics_shader::create(
+		return gpu::GraphicsShader::create(
 			device,
 			shader_asset::gbuffer_vert,
-			gpu::Graphics_shader::Stage::Vertex,
+			gpu::GraphicsShader::Stage::Vertex,
 			0,
 			0,
 			0,
@@ -206,14 +204,14 @@ namespace render::pipeline
 		);
 	}
 
-	static std::expected<gpu::Graphics_shader, util::Error> create_vertex_rigged_shader(
+	static std::expected<gpu::GraphicsShader, util::Error> create_vertex_rigged_shader(
 		SDL_GPUDevice* device
 	) noexcept
 	{
-		return gpu::Graphics_shader::create(
+		return gpu::GraphicsShader::create(
 			device,
 			shader_asset::gbuffer_skin_vert,
-			gpu::Graphics_shader::Stage::Vertex,
+			gpu::GraphicsShader::Stage::Vertex,
 			0,
 			0,
 			1,
@@ -221,14 +219,14 @@ namespace render::pipeline
 		);
 	}
 
-	static std::expected<gpu::Graphics_shader, util::Error> create_fragment_shader(
+	static std::expected<gpu::GraphicsShader, util::Error> create_fragment_shader(
 		SDL_GPUDevice* device
 	) noexcept
 	{
-		return gpu::Graphics_shader::create(
+		return gpu::GraphicsShader::create(
 			device,
 			shader_asset::gbuffer_frag,
-			gpu::Graphics_shader::Stage::Fragment,
+			gpu::GraphicsShader::Stage::Fragment,
 			5,
 			0,
 			0,
@@ -236,14 +234,14 @@ namespace render::pipeline
 		);
 	}
 
-	static std::expected<gpu::Graphics_shader, util::Error> create_fragment_mask_shader(
+	static std::expected<gpu::GraphicsShader, util::Error> create_fragment_mask_shader(
 		SDL_GPUDevice* device
 	) noexcept
 	{
-		return gpu::Graphics_shader::create(
+		return gpu::GraphicsShader::create(
 			device,
 			shader_asset::gbuffer_mask_frag,
-			gpu::Graphics_shader::Stage::Fragment,
+			gpu::GraphicsShader::Stage::Fragment,
 			5,
 			0,
 			0,
@@ -251,13 +249,13 @@ namespace render::pipeline
 		);
 	}
 
-	static std::expected<gpu::Graphics_pipeline, util::Error> create_pipeline(
+	static std::expected<gpu::GraphicsPipeline, util::Error> create_pipeline(
 		SDL_GPUDevice* device,
-		const gpu::Graphics_shader& vertex,
-		const gpu::Graphics_shader& vertex_rigged,
-		const gpu::Graphics_shader& fragment,
-		const gpu::Graphics_shader& fragment_mask,
-		gltf::Pipeline_mode mode,
+		const gpu::GraphicsShader& vertex,
+		const gpu::GraphicsShader& vertex_rigged,
+		const gpu::GraphicsShader& fragment,
+		const gpu::GraphicsShader& fragment_mask,
+		gltf::PipelineMode mode,
 		bool rigged
 	) noexcept
 	{
@@ -271,12 +269,12 @@ namespace render::pipeline
 		rasterizer_state.enable_depth_bias = false;
 		rasterizer_state.enable_depth_clip = true;
 
-		const gpu::Graphics_shader& fragment_shader =
-			(mode.alpha_mode == gltf::Alpha_mode::Opaque) ? fragment : fragment_mask;
+		const gpu::GraphicsShader& fragment_shader =
+			(mode.alpha_mode == gltf::AlphaMode::Opaque) ? fragment : fragment_mask;
 
-		const gpu::Graphics_shader& vertex_shader = rigged ? vertex_rigged : vertex;
+		const gpu::GraphicsShader& vertex_shader = rigged ? vertex_rigged : vertex;
 
-		return gpu::Graphics_pipeline::create(
+		return gpu::GraphicsPipeline::create(
 			device,
 			vertex_shader,
 			fragment_shader,
@@ -292,7 +290,7 @@ namespace render::pipeline
 		);
 	}
 
-	std::expected<Gbuffer_gltf, util::Error> Gbuffer_gltf::create(SDL_GPUDevice* device) noexcept
+	std::expected<GbufferGLTF, util::Error> GbufferGLTF::create(SDL_GPUDevice* device) noexcept
 	{
 		auto vertex_shader = create_vertex_shader(device);
 		if (!vertex_shader) return vertex_shader.error().forward("Create vertex shader failed");
@@ -308,16 +306,16 @@ namespace render::pipeline
 		if (!fragment_mask_shader)
 			return fragment_mask_shader.error().forward("Create fragment mask shader failed");
 
-		std::map<std::pair<gltf::Pipeline_mode, bool>, std::unique_ptr<Gltf_pipeline>> pipeline_result;
+		std::map<std::pair<gltf::PipelineMode, bool>, std::unique_ptr<PipelineGLTF>> pipeline_result;
 
 		for (const auto [alpha_mode, double_sided, rigged] : std::views::cartesian_product(
-				 std::array{gltf::Alpha_mode::Opaque, gltf::Alpha_mode::Mask, gltf::Alpha_mode::Blend},
+				 std::array{gltf::AlphaMode::Opaque, gltf::AlphaMode::Mask, gltf::AlphaMode::Blend},
 				 std::array{false, true},
 				 std::array{false, true}
 			 ))
 		{
 			const auto pipeline_cfg =
-				gltf::Pipeline_mode{.alpha_mode = alpha_mode, .double_sided = double_sided};
+				gltf::PipelineMode{.alpha_mode = alpha_mode, .double_sided = double_sided};
 
 			auto pipeline = create_pipeline(
 				device,
@@ -342,21 +340,21 @@ namespace render::pipeline
 			if (rigged)
 				pipeline_result.emplace(
 					std::pair(pipeline_cfg, rigged),
-					std::make_unique<Pipeline_rigged>(pipeline_cfg, std::move(*pipeline))
+					std::make_unique<PipelineRigged>(pipeline_cfg, std::move(*pipeline))
 				);
 			else
 				pipeline_result.emplace(
 					std::pair(pipeline_cfg, rigged),
-					std::make_unique<Pipeline_normal>(pipeline_cfg, std::move(*pipeline))
+					std::make_unique<PipelineNormal>(pipeline_cfg, std::move(*pipeline))
 				);
 		}
 
-		return Gbuffer_gltf(std::move(pipeline_result));
+		return GbufferGLTF(std::move(pipeline_result));
 	}
 
-	void Gbuffer_gltf::Pipeline_normal::bind(
-		const gpu::Command_buffer& command_buffer [[maybe_unused]],
-		const gpu::Render_pass& render_pass,
+	void GbufferGLTF::PipelineNormal::bind(
+		const gpu::CommandBuffer& command_buffer [[maybe_unused]],
+		const gpu::RenderPass& render_pass,
 		const glm::mat4& camera_matrix
 	) const noexcept
 	{
@@ -365,9 +363,9 @@ namespace render::pipeline
 		render_pass.set_stencil_reference(0x01);
 	}
 
-	void Gbuffer_gltf::Pipeline_rigged::bind(
-		const gpu::Command_buffer& command_buffer [[maybe_unused]],
-		const gpu::Render_pass& render_pass,
+	void GbufferGLTF::PipelineRigged::bind(
+		const gpu::CommandBuffer& command_buffer [[maybe_unused]],
+		const gpu::RenderPass& render_pass,
 		const glm::mat4& camera_matrix
 	) const noexcept
 	{
@@ -376,10 +374,10 @@ namespace render::pipeline
 		render_pass.set_stencil_reference(0x01);
 	}
 
-	void Gbuffer_gltf::Pipeline_normal::set_material(
-		const gpu::Command_buffer& command_buffer,
-		const gpu::Render_pass& render_pass,
-		const gltf::Material_gpu& material
+	void GbufferGLTF::PipelineNormal::set_material(
+		const gpu::CommandBuffer& command_buffer,
+		const gpu::RenderPass& render_pass,
+		const gltf::MaterialGPU& material
 	) const noexcept
 	{
 		const auto frag_param = Frag_param::from(material.params.factor);
@@ -395,10 +393,10 @@ namespace render::pipeline
 		);
 	}
 
-	void Gbuffer_gltf::Pipeline_rigged::set_material(
-		const gpu::Command_buffer& command_buffer,
-		const gpu::Render_pass& render_pass,
-		const gltf::Material_gpu& material
+	void GbufferGLTF::PipelineRigged::set_material(
+		const gpu::CommandBuffer& command_buffer,
+		const gpu::RenderPass& render_pass,
+		const gltf::MaterialGPU& material
 	) const noexcept
 	{
 		const auto frag_param = Frag_param::from(material.params.factor);
@@ -414,29 +412,29 @@ namespace render::pipeline
 		);
 	}
 
-	void Gbuffer_gltf::Pipeline_normal::set_skin(
-		const gpu::Render_pass& render_pass [[maybe_unused]],
-		const gltf::Deferred_skinning_resource& skinning_resource [[maybe_unused]]
+	void GbufferGLTF::PipelineNormal::set_skin(
+		const gpu::RenderPass& render_pass [[maybe_unused]],
+		const gltf::DeferredSkinningResource& skinning_resource [[maybe_unused]]
 	) const noexcept
 	{
 		// Do nothing for normal pipelines
 	}
 
-	void Gbuffer_gltf::Pipeline_rigged::set_skin(
-		const gpu::Render_pass& render_pass [[maybe_unused]],
-		const gltf::Deferred_skinning_resource& skinning_resource [[maybe_unused]]
+	void GbufferGLTF::PipelineRigged::set_skin(
+		const gpu::RenderPass& render_pass [[maybe_unused]],
+		const gltf::DeferredSkinningResource& skinning_resource [[maybe_unused]]
 	) const noexcept
 	{
 		render_pass.bind_vertex_storage_buffers(0, *skinning_resource.joint_matrices_buffer);
 	}
 
-	void Gbuffer_gltf::Pipeline_normal::draw(
-		const gpu::Command_buffer& command_buffer,
-		const gpu::Render_pass& render_pass,
-		const gltf::Primitive_drawcall& drawcall
+	void GbufferGLTF::PipelineNormal::draw(
+		const gpu::CommandBuffer& command_buffer,
+		const gpu::RenderPass& render_pass,
+		const gltf::PrimitiveDrawcall& drawcall
 	) const noexcept
 	{
-		const auto per_object_param = Per_object_param::from(drawcall);
+		const auto per_object_param = PerObjectParam::from(drawcall);
 		command_buffer.push_uniform_to_fragment(1, util::as_bytes(per_object_param));
 		const auto transform = drawcall.get_world_transform();
 		command_buffer.push_uniform_to_vertex(1, util::as_bytes(transform));
@@ -447,13 +445,13 @@ namespace render::pipeline
 		render_pass.draw_indexed(drawcall.primitive.index_count, 0, 1, 0, 0);
 	}
 
-	void Gbuffer_gltf::Pipeline_rigged::draw(
-		const gpu::Command_buffer& command_buffer,
-		const gpu::Render_pass& render_pass,
-		const gltf::Primitive_drawcall& drawcall
+	void GbufferGLTF::PipelineRigged::draw(
+		const gpu::CommandBuffer& command_buffer,
+		const gpu::RenderPass& render_pass,
+		const gltf::PrimitiveDrawcall& drawcall
 	) const noexcept
 	{
-		const auto per_object_param = Per_object_param::from(drawcall);
+		const auto per_object_param = PerObjectParam::from(drawcall);
 		command_buffer.push_uniform_to_fragment(1, util::as_bytes(per_object_param));
 		command_buffer.push_uniform_to_vertex(1, util::as_bytes(drawcall.get_joint_matrix_offset()));
 
@@ -463,9 +461,9 @@ namespace render::pipeline
 		render_pass.draw_indexed(drawcall.primitive.index_count, 0, 1, 0, 0);
 	}
 
-	void Gbuffer_gltf::render(
-		const gpu::Command_buffer& command_buffer,
-		const gpu::Render_pass& gbuffer_pass,
+	void GbufferGLTF::render(
+		const gpu::CommandBuffer& command_buffer,
+		const gpu::RenderPass& gbuffer_pass,
 		const drawdata::Gbuffer& drawdata
 	) const noexcept
 	{
@@ -495,10 +493,10 @@ namespace render::pipeline
 		command_buffer.pop_debug_group();
 	}
 
-	Gbuffer_gltf::Per_object_param Gbuffer_gltf::Per_object_param::from(
-		const gltf::Primitive_drawcall& drawcall
+	GbufferGLTF::PerObjectParam GbufferGLTF::PerObjectParam::from(
+		const gltf::PrimitiveDrawcall& drawcall
 	) noexcept
 	{
-		return Per_object_param{.emissive_multiplier = drawcall.emissive_multiplier};
+		return PerObjectParam{.emissive_multiplier = drawcall.emissive_multiplier};
 	}
 }

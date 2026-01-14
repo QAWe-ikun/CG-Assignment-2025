@@ -36,16 +36,16 @@ namespace render::pipeline
 		/// @param param Parameters
 		///
 		std::expected<void, util::Error> render(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Gbuffer& gbuffer_target,
-			const target::Light_buffer& light_buffer_target,
+			const target::LightBuffer& light_buffer_target,
 			std::span<const drawdata::Light> drawdata,
 			const Param& param
 		) const noexcept;
 
 	  private:
 
-		struct Point_light_param
+		struct PointLightParam
 		{
 			glm::mat4 VP_inv;
 			glm::vec2 screen_size;
@@ -54,10 +54,10 @@ namespace render::pipeline
 			alignas(16) glm::vec3 rel_intensity;
 			float range;
 
-			static Point_light_param from(const drawdata::Light& drawdata, const Param& param) noexcept;
+			static PointLightParam from(const drawdata::Light& drawdata, const Param& param) noexcept;
 		};
 
-		struct Spot_light_param
+		struct SpotLightParam
 		{
 			glm::mat4 VP_inv;
 			glm::mat4 M_inv;
@@ -69,42 +69,42 @@ namespace render::pipeline
 			float inner_cone_cos;
 			float outer_cone_cos;
 
-			static Spot_light_param from(const drawdata::Light& drawdata, const Param& param) noexcept;
+			static SpotLightParam from(const drawdata::Light& drawdata, const Param& param) noexcept;
 		};
 
 		std::expected<void, util::Error> run_depth_only_pass(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Gbuffer& gbuffer_target,
-			const std::function<void(const gpu::Render_pass& render_pass)>& task
+			const std::function<void(const gpu::RenderPass& render_pass)>& task
 		) const noexcept;
 
 		std::expected<void, util::Error> run_light_pass(
-			const gpu::Command_buffer& command_buffer,
+			const gpu::CommandBuffer& command_buffer,
 			const target::Gbuffer& gbuffer_target,
-			const target::Light_buffer& light_buffer_target,
-			const std::function<void(const gpu::Render_pass& render_pass)>& task
+			const target::LightBuffer& light_buffer_target,
+			const std::function<void(const gpu::RenderPass& render_pass)>& task
 		) const noexcept;
 
-		gpu::Graphics_pipeline depth_test_pipeline;
+		gpu::GraphicsPipeline depth_test_pipeline;
 
 		// Pipeline for point light when camera is outside light volume
-		gpu::Graphics_pipeline point_light_outside_pipeline;
+		gpu::GraphicsPipeline point_light_outside_pipeline;
 
 		// Pipeline for point light when camera is inside light volume
-		gpu::Graphics_pipeline point_light_inside_pipeline;
+		gpu::GraphicsPipeline point_light_inside_pipeline;
 
-		gpu::Graphics_pipeline spot_light_outside_pipeline;
+		gpu::GraphicsPipeline spot_light_outside_pipeline;
 
-		gpu::Graphics_pipeline spot_light_inside_pipeline;
+		gpu::GraphicsPipeline spot_light_inside_pipeline;
 
 		gpu::Sampler nearest_sampler;
 
 		Light(
-			gpu::Graphics_pipeline depth_test_pipeline,
-			gpu::Graphics_pipeline point_light_outside_pipeline,
-			gpu::Graphics_pipeline point_light_inside_pipeline,
-			gpu::Graphics_pipeline spot_light_outside_pipeline,
-			gpu::Graphics_pipeline spot_light_inside_pipeline,
+			gpu::GraphicsPipeline depth_test_pipeline,
+			gpu::GraphicsPipeline point_light_outside_pipeline,
+			gpu::GraphicsPipeline point_light_inside_pipeline,
+			gpu::GraphicsPipeline spot_light_outside_pipeline,
+			gpu::GraphicsPipeline spot_light_inside_pipeline,
 			gpu::Sampler nearest_sampler
 		) noexcept :
 			depth_test_pipeline(std::move(depth_test_pipeline)),
