@@ -4,7 +4,7 @@
 #include <mutex>
 #include <ranges>
 #include <rgbcx.h>
-#include <stb_dxt/stb_dxt.h>
+#include <stb_dxt.h>
 
 namespace image
 {

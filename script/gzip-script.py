@@ -1,5 +1,6 @@
 import gzip
 import argparse
+import os
 
 
 def _compress_file(path: str) -> bytes:
@@ -17,5 +18,9 @@ if __name__ == "__main__":
     output_path = args.output
 
     compressed_data = _compress_file(input_path)
+
+    # 确保输出目录存在
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
     with open(output_path, "wb") as f:
         f.write(compressed_data)

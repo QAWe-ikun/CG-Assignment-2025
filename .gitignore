@@ -14,3 +14,6 @@ TODO.md
 
 # Imgui generated files
 imgui.ini
+
+# claude cache
+.claude/
